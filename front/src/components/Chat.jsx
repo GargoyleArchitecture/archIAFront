@@ -16,6 +16,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ScienceIcon from "@mui/icons-material/Science";
+import DiagramViewer from "./DiagramViewer";
 import "../styles/chat.css";
 
 /* ======================= Config ======================= */
@@ -218,6 +219,11 @@ export default function Chat() {
 
       const textOut = data?.endMessage || "—";
 
+      // Build diagram object from response
+      const diagramData = data?.diagram && data.diagram.ok
+        ? { ok: true, format: data.diagram.format || "svg", svg_b64: data.diagram.svg_b64 || "" }
+        : null;
+
       const rendered = optimistic.map((m) =>
         m.id === pendingId
           ? {
@@ -225,7 +231,7 @@ export default function Chat() {
               pending: false,
               text: textOut,
               internal_messages: Array.isArray(data?.messages) ? data.messages : [],
-              mermaidCode: data?.mermaidCode || "",
+              diagram: diagramData,
               session_id: data?.session_id || sessionId,
               message_id: data?.message_id,
               suggestions: Array.isArray(data?.suggestions)
@@ -447,7 +453,7 @@ export default function Chat() {
             const lowerText = (msg.text || "").toLowerCase();
             const isDiagramAnswer =
               !isUser &&
-              (msg.diagram || msg.mermaidCode) &&
+              msg.diagram?.ok &&
               /diagram|diagrama/.test(lowerText);
 
             const uiSuggestions = isDiagramAnswer
@@ -501,8 +507,13 @@ export default function Chat() {
                     <AssistantMessage text={cleanedAssistantText} pending={msg.pending} />
                   )}
 
-                  {/* Render del diagrama SVG si existe */}
-      
+                  {/* Render del diagrama SVG (Graphviz) si existe */}
+                  {!isUser && msg.diagram?.ok && (
+                    <Box sx={{ mt: 2, mb: 1 }}>
+                      <DiagramViewer diagram={msg.diagram} />
+                    </Box>
+                  )}
+
                   {msg.images?.length > 0 && (
                     <Box className="image-container" sx={{ mt: 1 }}>
                       {msg.images.map((src, i) => (
