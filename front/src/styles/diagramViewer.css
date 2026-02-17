@@ -1,0 +1,61 @@
+.diagram-container {
+  position: relative;
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: #1a1a2e;
+  overflow: hidden;
+}
+
+.diagram-container.diagram-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  background: transparent;
+  border-style: dashed;
+}
+
+.diagram-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diagram-scroll-area {
+  overflow: auto;
+  max-height: 600px;
+  padding: 1rem;
+  cursor: grab;
+}
+
+.diagram-scroll-area:active {
+  cursor: grabbing;
+}
+
+.diagram-svg-wrapper {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+/* Ensure SVG content is visible and fills width */
+.diagram-svg-wrapper svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Make text visible on dark background */
+.diagram-svg-wrapper text {
+  fill: #ffffff;
+}
+
+.diagram-svg-wrapper polygon,
+.diagram-svg-wrapper ellipse,
+.diagram-svg-wrapper path {
+  /* Don't override fills from Graphviz – only fallback stroke */
+  stroke: currentColor;
+}
