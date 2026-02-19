@@ -127,8 +127,7 @@ class GraphState(TypedDict):
     memory_text: str               # Memoria de conversación
     
     # Diagramas
-    mermaidCode: str               # Código Mermaid generado
-    diagram: dict                  # Datos del diagrama
+    diagram: dict                  # Datos del diagrama (ok, format, svg_b64)
 ```
 
 ---
@@ -173,7 +172,7 @@ class GraphState(TypedDict):
 **Propósito**: Transformar descripciones textuales en diagramas arquitectónicos visuales.
 
 **Formatos soportados**:
-- **Mermaid**: Diagramas de flujo y componentes
+- **Graphviz/SVG**: El backend genera diagramas con Graphviz y los retorna como SVG codificado en base64
 - **PlantUML**: Diagramas de despliegue y secuencia
 
 **Flujo de generación**:
@@ -186,15 +185,15 @@ class GraphState(TypedDict):
                                                   │
                                     ┌─────────────▼─────────────┐
                                     │  Renderizado              │
-                                    │  • Kroki (PlantUML)       │
-                                    │  • Frontend (Mermaid)     │
+                                    │  • Graphviz → SVG (b64)   │
+                                    │  • Frontend (DiagramViewer)│
                                     └───────────────────────────┘
 ```
 
 **Componentes clave**:
 - [`diagram_agent.py`](file:///c:/Users/mgs05/Documents/GargoyleArchitecture/ArchIA/back/src/diagram_agent.py): Orquestación de generación
 - [`diagramCreator.py`](file:///c:/Users/mgs05/Documents/GargoyleArchitecture/ArchIA/back/src/diagramCreator.py): Lógica de creación
-- [`MermaidChart.jsx`](file:///c:/Users/mgs05/Documents/GargoyleArchitecture/ArchIA/front/src/components/MermaidChart.jsx): Renderizado en frontend
+- [`DiagramViewer.jsx`](front/src/components/DiagramViewer.jsx): Renderizado SVG en frontend
 
 ---
 
@@ -392,7 +391,7 @@ CREATE TABLE feedback (
             │
             ▼
      ┌─────────────┐
- 11. │DIAGRAM NODE │ Genera código Mermaid basado en ASR + estilo + tácticas
+ 11. │DIAGRAM NODE │ Genera diagrama SVG (Graphviz) basado en ASR + estilo + tácticas
      └──────┬──────┘
             │
             ▼
@@ -402,7 +401,7 @@ CREATE TABLE feedback (
             │
             ▼
      ┌─────────────┐
- 13. │  FRONTEND   │ MermaidChart.jsx renderiza el diagrama
+ 13. │  FRONTEND   │ DiagramViewer.jsx renderiza el diagrama SVG
      │             │ Chat.jsx muestra la explicación textual
      └──────┬──────┘
             │
@@ -457,7 +456,7 @@ ArchIA/
 │   │   ├── main.jsx                # Entry point
 │   │   └── components/
 │   │       ├── Chat.jsx            # Panel de conversación
-│   │       ├── MermaidChart.jsx    # Renderizador de diagramas
+│   │       ├── DiagramViewer.jsx   # Renderizador de diagramas SVG (Graphviz)
 │   │       └── Header.jsx          # Cabecera
 │   └── public/                     # Assets estáticos
 │
@@ -468,55 +467,34 @@ ArchIA/
 
 ## 7. Flujo de Datos Consolidado
 
-```mermaid
-flowchart TB
-    subgraph FRONTEND["Frontend (React)"]
-        Chat[Chat.jsx]
-        Mermaid[MermaidChart.jsx]
-    end
+```
+Flujo de Datos:
 
-    subgraph API["API Layer (FastAPI)"]
-        Main[main.py]
-        FB[(feedback_db)]
-    end
+  FRONTEND (React)
+    Chat.jsx ──► POST /message ──► main.py (FastAPI)
+    DiagramViewer.jsx                  │
+         ▲                             ▼
+         │                        graph.py (LangGraph)
+         │                             │
+         │                      ┌──────▼──────┐
+         │                      │  Supervisor  │
+         │                      └──────┬──────┘
+         │                             │
+         │              ┌──────────────┼──────────────┐
+         │              ▼              ▼              ▼
+         │         Investigator   Creator/ASR    Diagram Agent
+         │              │              │              │
+         │              ▼              │         Graphviz → SVG
+         │         rag_agent.py        │              │
+         │              │              │              │
+         │              ▼              ▼              ▼
+         │         ChromaDB       Unifier ◄───────────┘
+         │                             │
+         │                        Response JSON
+         │                        { endMessage, diagram: { ok, svg_b64 } }
+         └─────────────────────────────┘
 
-    subgraph ORCHESTRATION["Orquestación (LangGraph)"]
-        Graph[graph.py]
-        State[(state_db)]
-    end
-
-    subgraph AGENTS["Agentes Especializados"]
-        SUP[Supervisor]
-        INV[Investigator]
-        CRE[Creator]
-        EVA[Evaluator]
-        ASR[ASR Node]
-        TAC[Tactics]
-        STY[Style]
-        DIA[Diagram Agent]
-        UNI[Unifier]
-    end
-
-    subgraph DATA["Capa de Datos"]
-        RAG[rag_agent.py]
-        Chroma[(ChromaDB)]
-        LLM[LLM Factory]
-    end
-
-    Chat -->|POST /message| Main
-    Main --> Graph
-    Graph --> SUP
-    SUP --> INV & CRE & EVA & ASR & TAC & STY & DIA
-    INV --> RAG
-    RAG --> Chroma
-    DIA --> LLM
-    INV & CRE & EVA & ASR & TAC & STY & DIA --> UNI
-    UNI --> Graph
-    Graph --> State
-    Graph --> Main
-    Main -->|Response| Chat
-    Main -->|mermaidCode| Mermaid
-    Chat -->|POST /feedback| FB
+    Chat.jsx ──► POST /feedback ──► feedback_db
 ```
 
 ---

@@ -154,15 +154,6 @@
   color: white;
 }
 
-.mermaid-chart {
-  overflow-x: auto;
-  background-color: #1e1e1e;
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 0.5rem;
-}
-
 .msg-role-chip {
   font-size: 12px;
   background: rgba(148,163,184,.18);     /* slate-400/20 */

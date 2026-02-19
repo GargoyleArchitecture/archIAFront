@@ -16,6 +16,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ScienceIcon from "@mui/icons-material/Science";
+import DiagramViewer from "./DiagramViewer";
 import "../styles/chat.css";
 
 /* ======================= Config ======================= */
@@ -48,6 +49,30 @@ const loadChat = (sid) => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.MESSAGES(sid)) || "[]"); } catch { return []; }
 };
 const saveChat = (sid, msgs) => localStorage.setItem(STORAGE_KEYS.MESSAGES(sid), JSON.stringify(msgs));
+
+/**
+ * Fix double-encoded UTF-8 text.
+ * When UTF-8 bytes are misinterpreted as Latin-1 and re-encoded as UTF-8,
+ * characters like "í" become "Ã\xAD" and "¿" becomes "Â¿".
+ * This detects the pattern and reverses it.
+ */
+const fixUtf8 = (text) => {
+  if (!text || typeof text !== "string") return text || "";
+  // Quick check: look for UTF-8 lead bytes (0xC0-0xDF) followed by continuation bytes (0x80-0xBF)
+  // interpreted as Latin-1 characters — the hallmark of double encoding
+  if (!/[\u00C0-\u00DF][\u0080-\u00BF]/.test(text)) return text;
+  try {
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      if (code > 255) return text; // Not double-encoded
+      bytes[i] = code;
+    }
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return text;
+  }
+};
 
 const parseNextFromText = (text = "") => {
   const m = text.match(/^\s*Next:\s*([\s\S]*)$/im);
@@ -216,7 +241,12 @@ export default function Chat() {
       const data = await resp.json();
       if (seq !== requestSeq.current) return;
 
-      const textOut = data?.endMessage || "—";
+      const textOut = fixUtf8(data?.endMessage) || "—";
+
+      // Build diagram object from response
+      const diagramData = data?.diagram && data.diagram.ok
+        ? { ok: true, format: data.diagram.format || "svg", svg_b64: data.diagram.svg_b64 || "" }
+        : null;
 
       const rendered = optimistic.map((m) =>
         m.id === pendingId
@@ -225,11 +255,11 @@ export default function Chat() {
               pending: false,
               text: textOut,
               internal_messages: Array.isArray(data?.messages) ? data.messages : [],
-              mermaidCode: data?.mermaidCode || "",
+              diagram: diagramData,
               session_id: data?.session_id || sessionId,
               message_id: data?.message_id,
               suggestions: Array.isArray(data?.suggestions)
-                ? data.suggestions
+                ? data.suggestions.map((s) => (typeof s === "string" ? fixUtf8(s) : s))
                 : []
             }
           : m
@@ -447,7 +477,7 @@ export default function Chat() {
             const lowerText = (msg.text || "").toLowerCase();
             const isDiagramAnswer =
               !isUser &&
-              (msg.diagram || msg.mermaidCode) &&
+              msg.diagram?.ok &&
               /diagram|diagrama/.test(lowerText);
 
             const uiSuggestions = isDiagramAnswer
@@ -501,8 +531,13 @@ export default function Chat() {
                     <AssistantMessage text={cleanedAssistantText} pending={msg.pending} />
                   )}
 
-                  {/* Render del diagrama SVG si existe */}
-      
+                  {/* Render del diagrama SVG (Graphviz) si existe */}
+                  {!isUser && msg.diagram?.ok && (
+                    <Box sx={{ mt: 2, mb: 1 }}>
+                      <DiagramViewer diagram={msg.diagram} />
+                    </Box>
+                  )}
+
                   {msg.images?.length > 0 && (
                     <Box className="image-container" sx={{ mt: 1 }}>
                       {msg.images.map((src, i) => (
