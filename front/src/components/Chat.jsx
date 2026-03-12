@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -74,22 +75,6 @@ const fixUtf8 = (text) => {
   }
 };
 
-const parseNextFromText = (text = "") => {
-  const m = text.match(/^\s*Next:\s*([\s\S]*)$/im);
-  if (!m) return [];
-  const lines = m[1]
-    .split("\n")
-    .map((ln) => ln.replace(/^[\s\-•]+/, "").trim())
-    .filter(Boolean);
-  const cleaned = [];
-  for (const ln of lines) {
-    if (!ln) break;
-    cleaned.push(ln);
-    if (cleaned.length >= 8) break;
-  }
-  return cleaned;
-};
-
 const summarizeRoles = (internal = []) => {
   const counts = new Map();
   const order = ["supervisor", "researcher", "evaluator", "creator", "asr_recommender", "unifier"];
@@ -138,6 +123,11 @@ function AssistantMessage({ text, pending }) {
   );
 }
 
+AssistantMessage.propTypes = {
+  text: PropTypes.string,
+  pending: PropTypes.bool,
+};
+
 /* ======================= Chat ======================= */
 export default function Chat() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -173,6 +163,7 @@ export default function Chat() {
     } else {
       setMessages(loadChat(sessionId));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { setMessages(loadChat(sessionId)); }, [sessionId]);
@@ -245,7 +236,15 @@ export default function Chat() {
 
       // Build diagram object from response
       const diagramData = data?.diagram && data.diagram.ok
-        ? { ok: true, format: data.diagram.format || "svg", svg_b64: data.diagram.svg_b64 || "" }
+        ? {
+            ok: true,
+            format: data.diagram.format || "svg",
+            svg_b64: data.diagram.svg_b64 || "",
+            dot: data.diagram.dot || "",
+            dot_drawio: data.diagram.dot_drawio || "",
+            detail_level: data.diagram.detail_level || "detailed",
+            session_id: data?.session_id || sessionId,
+          }
         : null;
 
       const rendered = optimistic.map((m) =>
