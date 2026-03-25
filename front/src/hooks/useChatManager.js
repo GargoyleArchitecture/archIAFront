@@ -200,7 +200,6 @@ export function useChatManager() {
               pending:          false,
               text:             result.text,
               internalMessages: result.internalMessages,
-              mermaidCode:      result.mermaidCode,
               sessionId:        result.sessionId,
               messageId:        result.messageId,
               suggestions:      result.suggestions,

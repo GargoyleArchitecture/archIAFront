@@ -20,7 +20,6 @@ const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
  * @returns {Promise<{
  *   text:             string,
  *   internalMessages: object[],
- *   mermaidCode:      string,
  *   sessionId:        string,
  *   messageId:        string | undefined,
  *   suggestions:      string[],
@@ -40,11 +39,53 @@ export async function sendMessage({ text, sessionId, images = [] }) {
   return {
     text:             data?.endMessage                        ?? '—',
     internalMessages: Array.isArray(data?.messages)  ? data.messages    : [],
-    mermaidCode:      data?.mermaidCode                       ?? '',
     sessionId:        data?.session_id                        ?? sessionId,
     messageId:        data?.message_id,
     suggestions:      Array.isArray(data?.suggestions) ? data.suggestions : [],
   }
+}
+
+/* ================================================================
+   Diagram exports (Graphviz pipeline)
+================================================================ */
+
+/**
+ * @param {{
+ *  sessionId: string,
+ *  format?: 'svg'|'dot'|'dot_drawio'|'drawio'
+ * }} params
+ */
+export function buildDiagramExportUrl({ sessionId, format = 'svg' }) {
+  const query = new URLSearchParams()
+  query.set('session_id', sessionId)
+  query.set('format', format)
+  return `${API}/diagram/export?${query.toString()}`
+}
+
+/**
+ * @param {{ sessionId: string }} params
+ * @returns {Promise<{ svgText: string }>} 
+ */
+export async function fetchDiagramSvg({ sessionId }) {
+  const url = buildDiagramExportUrl({ sessionId, format: 'svg' })
+  const resp = await fetch(url)
+  const rawText = await resp.text()
+
+  if (!resp.ok) {
+    let message = rawText || `HTTP ${resp.status}`
+    try {
+      const parsed = JSON.parse(rawText)
+      if (parsed?.detail) message = String(parsed.detail)
+      if (parsed?.message) message = String(parsed.message)
+    } catch {
+      // ignore json parsing errors
+    }
+    const error = new Error(message)
+    error.status = resp.status
+    throw error
+  }
+
+  return { svgText: rawText }
 }
 
 /* ================================================================

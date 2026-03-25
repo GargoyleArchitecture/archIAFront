@@ -35,6 +35,7 @@ import ChatContainer from '../components/molecules/ChatContainer'
 import ChatHistory   from '../components/molecules/ChatHistory'
 import MessageInput  from '../components/molecules/MessageInput'
 import Modal         from '../components/molecules/Modal'
+import DiagramViewer from '../components/DiagramViewer'
 
 /* Organisms */
 import MarkdownRenderer from '../components/organisms/MarkdownRenderer'
@@ -443,8 +444,7 @@ export default function ChatView({ demo = false }) {
             const filteredSuggs  = rawSuggestions.filter(
               (s) => typeof s === 'string' && !/^[a-z0-9_]+$/i.test(s.trim())
             )
-            const isDiagram = (msg.mermaidCode || msg.diagram) &&
-              /diagram|diagrama/.test((msg.text || '').toLowerCase())
+            const isDiagram = /diagram|diagrama/.test((msg.text || '').toLowerCase())
             const uiSuggestions = isDiagram
               ? [
                   'Genera un diagrama de componentes de este sistema.',
@@ -495,6 +495,12 @@ export default function ChatView({ demo = false }) {
                 >
                   <MarkdownRenderer content={cleanedText} />
                 </BubbleMessage>
+
+                {!msg.pending && isDiagram && (
+                  <div className="w-full">
+                    <DiagramViewer sessionId={sessionId} />
+                  </div>
+                )}
 
                 {/* Metadatos (solo cuando no está cargando) */}
                 {!msg.pending && (
