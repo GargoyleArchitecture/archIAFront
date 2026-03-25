@@ -1,0 +1,218 @@
+/* ============================================================
+   DESIGN TOKENS — Source of Truth
+   Generado desde Figma UI Kit
+   ============================================================ */
+
+:root {
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA — Familias
+  ---------------------------------------------------------- */
+  --font-serif: 'Roboto Serif', serif;
+  --font-sans:  'Roboto Mono', monospace;
+  --font-mono:  'JetBrains Mono', monospace;
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA — Pesos
+  ---------------------------------------------------------- */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA — Tamaños (font-size)
+  ---------------------------------------------------------- */
+  --text-display-2xl: 4.5rem;    /* 72px */
+  --text-display-xl:  3.75rem;   /* 60px */
+  --text-display-lg:  3rem;      /* 48px */
+  --text-display-md:  2.25rem;   /* 36px */
+  --text-display-sm:  1.875rem;  /* 30px */
+  --text-display-xs:  1.5rem;    /* 24px */
+  --text-xl:          1.25rem;   /* 20px */
+  --text-lg:          1.125rem;  /* 18px */
+  --text-md:          1rem;      /* 16px */
+  --text-sm:          0.875rem;  /* 14px */
+  --text-xs:          0.75rem;   /* 12px */
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA — Altura de línea (line-height)
+  ---------------------------------------------------------- */
+  --leading-display-2xl: 5.625rem;  /* 90px */
+  --leading-display-xl:  4.5rem;    /* 72px */
+  --leading-display-lg:  3.75rem;   /* 60px */
+  --leading-display-md:  2.75rem;   /* 44px */
+  --leading-display-sm:  2.375rem;  /* 38px */
+  --leading-display-xs:  2rem;      /* 32px */
+  --leading-xl:          1.875rem;  /* 30px */
+  --leading-lg:          1.75rem;   /* 28px */
+  --leading-md:          1.5rem;    /* 24px */
+  --leading-sm:          1.25rem;   /* 20px */
+  --leading-xs:          1.125rem;  /* 18px */
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA — Espaciado de letras (letter-spacing)
+  ---------------------------------------------------------- */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0em;
+
+  /* ----------------------------------------------------------
+     COLORES — Base
+  ---------------------------------------------------------- */
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+
+  /* ----------------------------------------------------------
+     COLORES — Gray
+  ---------------------------------------------------------- */
+  --color-gray-25:  #FDFDFD;
+  --color-gray-50:  #FAFAFA;
+  --color-gray-100: #F5F5F5;
+  --color-gray-200: #E9EAEB;
+  --color-gray-300: #D5D7DA;
+  --color-gray-400: #A4A7AE;
+  --color-gray-500: #717680;
+  --color-gray-600: #535862;
+  --color-gray-700: #414651;
+  --color-gray-800: #252B37;
+  --color-gray-900: #101828;
+
+  /* ----------------------------------------------------------
+     COLORES — Brand (Azul primario)
+  ---------------------------------------------------------- */
+  --color-brand-25:  #F4FDFF;
+  --color-brand-50:  #E5FAFF;
+  --color-brand-100: #CCF5FF;
+  --color-brand-200: #99E9FF;
+  --color-brand-300: #66D9FF;
+  --color-brand-400: #33C5FF;
+  --color-brand-500: #00B3FF;
+  --color-brand-600: #0088CC;
+  --color-brand-700: #006DA8;
+  --color-brand-800: #00578A;
+  --color-brand-900: #003D66;
+
+  /* ----------------------------------------------------------
+     COLORES — Secondary (Naranja)
+  ---------------------------------------------------------- */
+  --color-secondary-25:  #FFFAF5;
+  --color-secondary-50:  #FFF2E5;
+  --color-secondary-100: #FFE4CC;
+  --color-secondary-200: #FFC799;
+  --color-secondary-300: #FFA666;
+  --color-secondary-400: #FF8133;
+  --color-secondary-500: #FF5E00;
+  --color-secondary-600: #CC4400;
+  --color-secondary-700: #A83500;
+  --color-secondary-800: #8A2900;
+  --color-secondary-900: #661D00;
+
+  /* ----------------------------------------------------------
+     COLORES — Error (Rojo)
+  ---------------------------------------------------------- */
+  --color-error-25:  #FFFBFA;
+  --color-error-50:  #FEF3F2;
+  --color-error-100: #FEE4E2;
+  --color-error-200: #FECDCA;
+  --color-error-300: #FDA29B;
+  --color-error-400: #F97066;
+  --color-error-500: #F04438;
+  --color-error-600: #D92D20;
+  --color-error-700: #B42318;
+  --color-error-800: #912018;
+  --color-error-900: #7A271A;
+
+  /* ----------------------------------------------------------
+     COLORES — Warning (Amarillo/Naranja)
+  ---------------------------------------------------------- */
+  --color-warning-25:  #FFFCF5;
+  --color-warning-50:  #FFFAEB;
+  --color-warning-100: #FEF0C7;
+  --color-warning-200: #FEDF89;
+  --color-warning-300: #FEC84B;
+  --color-warning-400: #FDB022;
+  --color-warning-500: #F79009;
+  --color-warning-600: #DC6803;
+  --color-warning-700: #B54708;
+  --color-warning-800: #93370D;
+  --color-warning-900: #7A2E0E;
+
+  /* ----------------------------------------------------------
+     COLORES — Success (Verde)
+  ---------------------------------------------------------- */
+  --color-success-25:  #F6FEF9;
+  --color-success-50:  #ECFDF3;
+  --color-success-100: #D1FADF;
+  --color-success-200: #A6F4C5;
+  --color-success-300: #6CE9A6;
+  --color-success-400: #32D583;
+  --color-success-500: #12B76A;
+  --color-success-600: #039855;
+  --color-success-700: #027A48;
+  --color-success-800: #05603A;
+  --color-success-900: #054F31;
+
+  /* ----------------------------------------------------------
+     GRADIENTES — Brand
+     Nota: las variables almacenan la definición completa del
+     gradiente para ser consumida vía backgroundImage.
+  ---------------------------------------------------------- */
+  --gradient-angular:           conic-gradient(from 0deg, #0088CC 0%, #0088CC 100%);
+  --gradient-linear-90-600-500: linear-gradient(90deg,    #0088CC 0%, #00B3FF 100%);
+  --gradient-linear-45-700-600: linear-gradient(45deg,    #006DA8 0%, #0088CC 100%);
+  --gradient-linear-45-800-600: linear-gradient(45deg,    #00578A 0%, #0088CC 100%);
+  --gradient-linear-90-800-600: linear-gradient(90deg,    #00578A 0%, #0088CC 100%);
+  --gradient-linear-26-800-700: linear-gradient(26.5deg,  #00578A 0%, #006DA8 100%);
+  --gradient-linear-45-900-600: linear-gradient(45deg,    #003D66 0%, #0088CC 100%);
+
+  /* ----------------------------------------------------------
+     SOMBRAS — Box Shadows
+     Color base: #0A0D12 → rgb(10, 13, 18)
+     Sintaxis: offset-x | offset-y | blur | spread | color
+  ---------------------------------------------------------- */
+  --shadow-xs:  0 1px 2px 0px rgba(10, 13, 18, 0.05);
+
+  --shadow-sm:  0 1px 3px 0px rgba(10, 13, 18, 0.10),
+                0 1px 2px 0px rgba(10, 13, 18, 0.06);
+
+  --shadow-md:  0 4px  8px -2px rgba(10, 13, 18, 0.10),
+                0 2px  4px -2px rgba(10, 13, 18, 0.06);
+
+  --shadow-lg:  0 12px 16px -4px rgba(10, 13, 18, 0.08),
+                0  4px  6px -2px rgba(10, 13, 18, 0.03);
+
+  --shadow-xl:  0 20px 24px -4px rgba(10, 13, 18, 0.08),
+                0  8px  8px -4px rgba(10, 13, 18, 0.03);
+
+  --shadow-2xl: 0 24px 48px -12px rgba(10, 13, 18, 0.18);
+
+  --shadow-3xl: 0 32px 64px -12px rgba(10, 13, 18, 0.14);
+
+  /* ----------------------------------------------------------
+     SOMBRAS — Focus Rings
+     Sintaxis: 0 0 0 spread color
+  ---------------------------------------------------------- */
+  --ring-primary-100: 0 0 0 4px #CCF5FF;
+  --ring-gray-100:    0 0 0 4px #F2F3F5;
+  --ring-error-100:   0 0 0 4px #FEE4E2;
+  --ring-primary-600: 0 0 0 4px #0088CC;
+  --ring-gray-600:    0 0 0 4px #525863;
+
+  /* ----------------------------------------------------------
+     BORDES — Radio
+  ---------------------------------------------------------- */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-full: 999px;
+
+  /* ----------------------------------------------------------
+     ESPACIADO
+  ---------------------------------------------------------- */
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-6:  24px;
+  --spacing-10: 40px;
+}
