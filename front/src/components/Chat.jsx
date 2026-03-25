@@ -234,19 +234,6 @@ export default function Chat() {
 
       const textOut = fixUtf8(data?.endMessage) || "—";
 
-      // Build diagram object from response
-      const diagramData = data?.diagram && data.diagram.ok
-        ? {
-            ok: true,
-            format: data.diagram.format || "svg",
-            svg_b64: data.diagram.svg_b64 || "",
-            dot: data.diagram.dot || "",
-            dot_drawio: data.diagram.dot_drawio || "",
-            detail_level: data.diagram.detail_level || "detailed",
-            session_id: data?.session_id || sessionId,
-          }
-        : null;
-
       const rendered = optimistic.map((m) =>
         m.id === pendingId
           ? {
@@ -254,7 +241,6 @@ export default function Chat() {
               pending: false,
               text: textOut,
               internal_messages: Array.isArray(data?.messages) ? data.messages : [],
-              diagram: diagramData,
               session_id: data?.session_id || sessionId,
               message_id: data?.message_id,
               suggestions: Array.isArray(data?.suggestions)
@@ -476,7 +462,6 @@ export default function Chat() {
             const lowerText = (msg.text || "").toLowerCase();
             const isDiagramAnswer =
               !isUser &&
-              msg.diagram?.ok &&
               /diagram|diagrama/.test(lowerText);
 
             const uiSuggestions = isDiagramAnswer
@@ -531,9 +516,9 @@ export default function Chat() {
                   )}
 
                   {/* Render del diagrama SVG (Graphviz) si existe */}
-                  {!isUser && msg.diagram?.ok && (
+                  {!isUser && isDiagramAnswer && (
                     <Box sx={{ mt: 2, mb: 1 }}>
-                      <DiagramViewer diagram={msg.diagram} />
+                      <DiagramViewer sessionId={msg.session_id} />
                     </Box>
                   )}
 
