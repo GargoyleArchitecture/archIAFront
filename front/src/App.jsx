@@ -4,16 +4,16 @@ import MoleculeShowcase from './MoleculeShowcase'
 import ChatView from './views/ChatView'
 
 function App() {
-  const [view, setView] = useState('atoms')
+  const [view, setView] = useState('demo')
 
+  if (view === 'atoms') {
+    return <AtomShowcase onNavigate={setView} />
+  }
   if (view === 'molecules') {
     return <MoleculeShowcase onNavigate={setView} />
   }
-  if (view === 'demo') {
-    return <ChatView onNavigate={setView} />
-  }
 
-  return <AtomShowcase onNavigate={setView} />
+  return <ChatView onNavigate={setView} />
 }
 
 export default App
