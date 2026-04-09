@@ -23,6 +23,7 @@ import MoreHorizIcon     from '@mui/icons-material/MoreHoriz'
 import ScienceIcon       from '@mui/icons-material/Science'
 import AttachFileIcon    from '@mui/icons-material/AttachFile'
 import CloseIcon         from '@mui/icons-material/Close'
+import HelpOutlineIcon   from '@mui/icons-material/HelpOutline'
 
 /* Atoms */
 import TextAtom    from '../components/atoms/TextAtom'
@@ -168,7 +169,7 @@ function FeedbackButtons({ sessionId, messageId, rated, onRate }) {
 /* ================================================================
    COMPONENTE PRINCIPAL
 ================================================================ */
-export default function ChatView({ demo = false }) {
+export default function ChatView({ demo = false, onNavigate }) {
   /* ── Lógica del chat (hook) ── */
   const {
     sessions,
@@ -397,6 +398,17 @@ export default function ChatView({ demo = false }) {
               Generando respuesta…
             </span>
           )}
+
+          <TooltipAtom content="Design System" position="bottom">
+            <ButtonAtom
+              variant="icon" intent="ghost" size="xs"
+              onClick={() => onNavigate?.('atoms')}
+              aria-label="Ver Design System"
+              className={isBusy ? '' : 'ml-auto'}
+            >
+              <HelpOutlineIcon />
+            </ButtonAtom>
+          </TooltipAtom>
         </header>
 
         {/* ── Mensajes ── */}

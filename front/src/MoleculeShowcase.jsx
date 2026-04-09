@@ -1892,6 +1892,14 @@ export default function MoleculeShowcase({ onNavigate }) {
           >
             ← Ver Átomos
           </ButtonAtom>
+          <ButtonAtom
+            as="button"
+            intent="ghost"
+            size="sm"
+            onClick={() => onNavigate?.('demo')}
+          >
+            Ver Demo →
+          </ButtonAtom>
           <span className="text-xs font-mono text-gray-400">v0.1 · Atomic Design + Tailwind CSS v4</span>
         </BoxAtom>
       </header>
