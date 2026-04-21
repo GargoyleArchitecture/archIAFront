@@ -25,7 +25,7 @@ const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
  *   suggestions:      string[],
  * }>}
  */
-export async function sendMessage({ text, sessionId, images = [] }) {
+export async function sendMessage({ text, sessionId, images = [], onPartial } = {}) {
   const form = new FormData()
   form.append('message',    text)
   form.append('session_id', sessionId)
@@ -33,15 +33,52 @@ export async function sendMessage({ text, sessionId, images = [] }) {
 
   const resp = await fetch(`${API}/message`, { method: 'POST', body: form })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
+  if (!resp.body) throw new Error('Response body is not a readable stream')
 
-  const data = await resp.json()
+  const reader  = resp.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buffer    = ''
+  let final     = null
+  let streamErr = null
+
+  outer: while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    let sep
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const rawEvent = buffer.slice(0, sep)
+      buffer = buffer.slice(sep + 2)
+
+      const dataLine = rawEvent
+        .split('\n')
+        .filter((ln) => ln.startsWith('data:'))
+        .map((ln) => ln.slice(5).trimStart())
+        .join('\n')
+      if (!dataLine) continue
+      if (dataLine === '[DONE]') break outer
+
+      let evt
+      try { evt = JSON.parse(dataLine) } catch { continue }
+
+      if (evt.type === 'complete') { final = evt; break outer }
+      else if (evt.type === 'error') { streamErr = new Error(evt.message || 'Stream error'); break outer }
+      else if (evt.type === 'partial' && typeof onPartial === 'function') onPartial(evt)
+    }
+  }
+
+  try { await reader.cancel() } catch { /* stream already closed */ }
+
+  if (streamErr) throw streamErr
+  if (!final)    throw new Error('Stream ended without a complete event')
 
   return {
-    text:             data?.endMessage                        ?? '—',
-    internalMessages: Array.isArray(data?.messages)  ? data.messages    : [],
-    sessionId:        data?.session_id                        ?? sessionId,
-    messageId:        data?.message_id,
-    suggestions:      Array.isArray(data?.suggestions) ? data.suggestions : [],
+    text:             final?.endMessage                          ?? '—',
+    internalMessages: Array.isArray(final?.messages)    ? final.messages    : [],
+    sessionId:        final?.session_id                          ?? sessionId,
+    messageId:        final?.message_id,
+    suggestions:      Array.isArray(final?.suggestions) ? final.suggestions : [],
   }
 }
 
