@@ -1,9 +1,15 @@
 /**
  * useChatManager.js — Capa de lógica: estado del chat + persistencia
  *
- * Centraliza toda la lógica de sesiones, mensajes y LocalStorage.
- * La vista solo consume datos y llama a funciones — nunca toca
- * directamente ni fetch ni localStorage.
+ * Soporta dos modos según el parámetro `projectId`:
+ *
+ *   • Modo in-memory (projectId = null):
+ *     Una sola sesión efímera, sin llamadas al Backend API ni localStorage.
+ *     Compatible con ChatView en /chat.
+ *
+ *   • Modo Backend API (projectId = string):
+ *     Carga chats y mensajes del Backend API. Persiste cada mensaje
+ *     (USER y AI) tras cada intercambio. Historial sobrevive recargas.
  *
  * Exporta además dos utilidades de presentación reutilizables:
  *   summarizeRoles     — agrupa los agentes internos por nombre
@@ -12,8 +18,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  sendMessage  as apiSendMessage,
-  sendFeedback as apiSendFeedback,
+  sendMessage    as aiSendMessage,
+  sendFeedback   as apiSendFeedback,
+  listChats,
+  createChat,
+  updateChat,
+  deleteChat,
+  fetchMessages,
+  persistMessage,
 } from '../services/chatService'
 
 /* ================================================================
@@ -23,26 +35,11 @@ import {
 const uuid = () =>
   crypto?.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())
 
-const KEYS = {
-  SESSIONS: 'arquia.sessions',
-  MESSAGES: (sid) => `arquia.chat.${sid}`,
-}
-
 const titleFrom = (text) => {
   const t = (text || '').trim()
   if (!t) return 'Nuevo chat'
   return t.split('\n')[0].slice(0, 60) || 'Nuevo chat'
 }
-
-const loadSessions = () => {
-  try { return JSON.parse(localStorage.getItem(KEYS.SESSIONS) || '[]') } catch { return [] }
-}
-const saveSessions = (arr) => localStorage.setItem(KEYS.SESSIONS, JSON.stringify(arr))
-
-const loadChat = (sid) => {
-  try { return JSON.parse(localStorage.getItem(KEYS.MESSAGES(sid)) || '[]') } catch { return [] }
-}
-const saveChat = (sid, msgs) => localStorage.setItem(KEYS.MESSAGES(sid), JSON.stringify(msgs))
 
 /* ----------------------------------------------------------------
    summarizeRoles — exportada para uso en la vista
@@ -85,40 +82,74 @@ export const extractRagSources = (internal = []) => {
 /* ================================================================
    HOOK PRINCIPAL
 ================================================================ */
-export function useChatManager() {
-  /* Estado de sesiones */
-  const [sessions,      setSessions]      = useState(loadSessions)
-  const [sessionId,     setSessionId]     = useState(() => loadSessions()?.[0]?.id ?? uuid())
-  const [messages,      setMessages]      = useState(() => loadChat(loadSessions()?.[0]?.id ?? ''))
-  const [ratedMessages, setRatedMessages] = useState(() => new Set())
 
-  /* Secuencia de requests para descartar respuestas obsoletas */
+/**
+ * @param {{ projectId?: string|null }} options
+ *   projectId — ID del proyecto activo. null = modo in-memory.
+ */
+export function useChatManager({ projectId = null } = {}) {
+  const [sessions,      setSessions]      = useState([])
+  const [sessionId,     setSessionId]     = useState(null)
+  const [messages,      setMessages]      = useState([])
+  const [ratedMessages, setRatedMessages] = useState(() => new Set())
+  const [isLoading,     setIsLoading]     = useState(false)
+
   const requestSeq = useRef(0)
 
   /* isBusy: true mientras haya un mensaje con pending=true */
   const isBusy = useMemo(() => messages.some((m) => m.pending), [messages])
 
-  /* ── Inicialización: crea sesión por defecto si no existe ninguna ── */
+  /* ── Inicialización al montar / cambiar de proyecto ── */
   useEffect(() => {
-    const existing = loadSessions()
-    if (existing.length === 0) {
-      const id    = sessionId
-      const first = { id, title: 'Nuevo chat', createdAt: Date.now() }
-      const arr   = [first]
-      setSessions(arr)
-      saveSessions(arr)
-      saveChat(id, [])
-      setMessages([])
-    } else {
-      setMessages(loadChat(sessionId))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    setSessions([])
+    setMessages([])
+    setSessionId(null)
 
-  /* ── Carga mensajes al cambiar de sesión ── */
+    if (!projectId) {
+      /* Modo in-memory: una sesión vacía, sin API */
+      const id = uuid()
+      setSessions([{ id, title: 'Nuevo chat', createdAt: Date.now() }])
+      setSessionId(id)
+      return
+    }
+
+    /* Modo API: cargar chats del proyecto */
+    setIsLoading(true)
+    listChats({ projectId })
+      .then((list) => {
+        if (list.length === 0) {
+          return createChat({ projectId, title: 'Nuevo chat' }).then((c) => [c])
+        }
+        return list
+      })
+      .then((list) => {
+        const normalized = list.map((c) => ({
+          id:        c.id,
+          title:     c.title || 'Nuevo chat',
+          createdAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
+        }))
+        setSessions(normalized)
+        setSessionId(normalized[0].id)
+      })
+      .catch(() => {
+        /* degradación: sesión in-memory si el API falla */
+        const id = uuid()
+        setSessions([{ id, title: 'Nuevo chat', createdAt: Date.now() }])
+        setSessionId(id)
+      })
+      .finally(() => setIsLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  /* ── Carga mensajes al cambiar de sesión (solo en modo API) ── */
   useEffect(() => {
-    setMessages(loadChat(sessionId))
-  }, [sessionId])
+    if (!sessionId || !projectId) return
+    setIsLoading(true)
+    fetchMessages(sessionId)
+      .then(setMessages)
+      .catch(() => setMessages([]))
+      .finally(() => setIsLoading(false))
+  }, [sessionId, projectId])
 
   /* ================================================================
      OPERACIONES SOBRE SESIONES
@@ -126,38 +157,56 @@ export function useChatManager() {
 
   const createSession = () => {
     if (isBusy) return
-    const id  = uuid()
-    const s   = { id, title: 'Nuevo chat', createdAt: Date.now() }
-    const arr = [s, ...sessions]
-    setSessions(arr)
-    saveSessions(arr)
-    setSessionId(id)
-    saveChat(id, [])
+
+    if (!projectId) {
+      /* Modo in-memory */
+      const id  = uuid()
+      const s   = { id, title: 'Nuevo chat', createdAt: Date.now() }
+      setSessions((prev) => [s, ...prev])
+      setSessionId(id)
+      setMessages([])
+      return
+    }
+
+    /* Modo API */
+    createChat({ projectId, title: 'Nuevo chat' })
+      .then((c) => {
+        const s = {
+          id:        c.id,
+          title:     c.title || 'Nuevo chat',
+          createdAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
+        }
+        setSessions((prev) => [s, ...prev])
+        setSessionId(s.id)
+        setMessages([])
+      })
+      .catch(() => {})
   }
 
   const renameSession = (id, title) => {
-    const arr = sessions.map((s) => (s.id === id ? { ...s, title } : s))
-    setSessions(arr)
-    saveSessions(arr)
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title } : s)))
+    if (projectId) {
+      updateChat(id, { title }).catch(() => {})
+    }
   }
 
   const deleteSession = (id) => {
     if (isBusy) return
-    const arr = sessions.filter((s) => s.id !== id)
-    setSessions(arr)
-    saveSessions(arr)
-    localStorage.removeItem(KEYS.MESSAGES(id))
+
+    const remaining = sessions.filter((s) => s.id !== id)
+    setSessions(remaining)
+
+    if (projectId) {
+      deleteChat(id).catch(() => {})
+    }
 
     if (id === sessionId) {
-      const nextId = arr[0]?.id ?? uuid()
-      if (!arr[0]) {
-        const ns   = { id: nextId, title: 'Nuevo chat', createdAt: Date.now() }
-        const arr2 = [ns]
-        setSessions(arr2)
-        saveSessions(arr2)
-        saveChat(nextId, [])
+      if (remaining.length > 0) {
+        setSessionId(remaining[0].id)
+      } else {
+        /* Crear nueva sesión al quedarse sin chats */
+        createSession()
       }
-      setSessionId(nextId)
     }
   }
 
@@ -166,7 +215,7 @@ export function useChatManager() {
   ================================================================ */
 
   const send = async (text, images = []) => {
-    if (isBusy) return
+    if (isBusy || !sessionId) return
     const textToSend = text.trim()
     if (!textToSend && images.length === 0) return
 
@@ -186,12 +235,31 @@ export function useChatManager() {
 
     const optimistic = [...messages, userMsg, pending]
     setMessages(optimistic)
-    saveChat(sessionId, optimistic)
 
     const seq = ++requestSeq.current
+
     try {
-      const result = await apiSendMessage({ text: textToSend, sessionId, images })
+      /* Persistir mensaje del usuario en el Backend API */
+      if (projectId) {
+        await persistMessage(sessionId, { content: textToSend, role: 'USER' })
+      }
+
+      /* Llamar al Backend Inteligente */
+      const accessToken = localStorage.getItem('archia.accessToken') || ''
+      const result = await aiSendMessage({
+        text: textToSend,
+        sessionId,
+        images,
+        projectId,
+        accessToken,
+      })
+
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
+
+      /* Persistir respuesta del asistente en el Backend API */
+      if (projectId) {
+        await persistMessage(sessionId, { content: result.text, role: 'AI' })
+      }
 
       const rendered = optimistic.map((m) =>
         m.id === pendingId
@@ -208,7 +276,6 @@ export function useChatManager() {
           : m
       )
       setMessages(rendered)
-      saveChat(sessionId, rendered)
 
     } catch {
       const rendered = optimistic.map((m) =>
@@ -217,7 +284,6 @@ export function useChatManager() {
           : m
       )
       setMessages(rendered)
-      saveChat(sessionId, rendered)
     }
   }
 
@@ -241,6 +307,7 @@ export function useChatManager() {
     sessionId,
     messages,
     isBusy,
+    isLoading,
     ratedMessages,
     /* acciones */
     setSessionId,
