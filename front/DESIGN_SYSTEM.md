@@ -1566,5 +1566,61 @@ Cuando un agente o desarrollador recibe una tarea nueva:
 
 ---
 
+---
+
+## 11. Theming Dual — Modo Tutor / Modo Profesional
+
+### 11.1 Filosofía
+
+ArchIA expone dos modos de interacción que cambian la presentación de los chats:
+
+- **Tutor:** énfasis pedagógico. Lectura cómoda, paleta cálida (naranja secundario), tipografía serif, padding amplio, blockquotes destacados como callouts.
+- **Profesional:** consultor senior. Densidad informativa, paleta fría (azul brand), tipografía mono, bloques de código a ancho completo, alto contraste.
+
+### 11.2 Activación
+
+- El atributo `data-mode` vive en `<html>` y se gestiona desde `ModeContext` (F1-T5).
+- Default: `professional`. Persistencia en `localStorage` bajo `arquia.mode`.
+- Conmutar tokens vía CSS variables evita re-render de React.
+
+### 11.3 Tabla de tokens semánticos (mapeo a Material Design 3)
+
+| Token | MD3 role | Tutor | Profesional |
+|---|---|---|---|
+| `--mode-primary` | primary | `--color-secondary-600` (naranja) | `--color-brand-700` (azul) |
+| `--mode-on-primary` | on-primary | blanco | blanco |
+| `--mode-primary-container` | primary-container | `--color-secondary-100` | `--color-brand-100` |
+| `--mode-on-primary-container` | on-primary-container | `--color-secondary-900` | `--color-brand-900` |
+| `--mode-surface` | surface | `--color-secondary-25` | `--color-gray-25` |
+| `--mode-on-surface` | on-surface | `--color-gray-900` | `--color-gray-900` |
+| `--mode-surface-container` | surface-container | `--color-secondary-50` | `--color-gray-100` |
+| `--mode-outline` | outline | `--color-secondary-300` | `--color-gray-300` |
+| `--mode-bubble-padding` | spacing | `--spacing-6` (24px) | `--spacing-3` (12px) |
+| `--mode-message-gap` | spacing | `--spacing-4` (16px) | `--spacing-2` (8px) |
+| `--mode-content-max-width` | layout | `68ch` | `100%` |
+| `--mode-font-body` | typography | `--font-serif` | `--font-mono` |
+| `--mode-leading-body` | typography | `--leading-lg` (28px) | `--leading-md` (24px) |
+| `--mode-text-body` | typography | `--text-md` (16px) | `--text-sm` (14px) |
+
+Tokens específicos por modo (no compartidos):
+
+- **Tutor:** `--mode-blockquote-bg`, `--mode-blockquote-fg`, `--mode-callout-border` (ámbar para enfatizar analogías y citas).
+- **Profesional:** `--mode-code-bg`, `--mode-code-fg`, `--mode-callout-border` (azul para bloques de código).
+
+### 11.4 Rationale UX
+
+- **Color cálido en tutor:** investigación de UX educativo asocia tonos cálidos con cercanía y disposición a la pregunta. Reduce fricción para usuarios menos seguros.
+- **Color frío en profesional:** asociación con herramientas técnicas (IDEs, dashboards). Comunica precisión.
+- **Serif en tutor / mono en profesional:** la serif favorece lectura prolongada de explicaciones; la mono refuerza el rol de "respuesta operativa con código".
+- **Padding amplio en tutor / denso en profesional:** prioriza claridad sobre densidad cuando se enseña; al revés cuando se consulta.
+
+### 11.5 Reglas estrictas
+
+- Prohibido introducir emojis o iconografía decorativa fuera de `@mui/icons-material`.
+- Cualquier nuevo token semántico debe declararse en ambos modos para evitar fallback no deseado al `:root`.
+- Los componentes consumen siempre `var(--mode-*)`, nunca colores brand directos. Esto aísla a los componentes del tema activo.
+
+---
+
 *ArchIA Design System — Atomic Design + Tailwind CSS v4 + React 19*
-*Última actualización: 2026-03-09*
+*Última actualización: 2026-04-28*

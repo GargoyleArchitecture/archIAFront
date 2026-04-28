@@ -216,3 +216,65 @@
   --spacing-6:  24px;
   --spacing-10: 40px;
 }
+
+/* ============================================================
+   THEMING DUAL — Modo Tutor / Modo Profesional
+   Activación: atributo data-mode en <html>.
+   Mapeo a Material Design 3 color roles (primary, on-primary,
+   surface, on-surface, surface-container, outline).
+   Default: data-mode="professional".
+   ============================================================ */
+
+[data-mode="tutor"] {
+  /* MD3 color roles */
+  --mode-primary:              var(--color-secondary-600);
+  --mode-on-primary:           var(--color-white);
+  --mode-primary-container:    var(--color-secondary-100);
+  --mode-on-primary-container: var(--color-secondary-900);
+  --mode-surface:              var(--color-secondary-25);
+  --mode-on-surface:           var(--color-gray-900);
+  --mode-surface-container:    var(--color-secondary-50);
+  --mode-outline:              var(--color-secondary-300);
+
+  /* Pedagogical accents */
+  --mode-blockquote-bg:        var(--color-warning-50);
+  --mode-blockquote-fg:        var(--color-warning-900);
+  --mode-callout-border:       var(--color-warning-300);
+
+  /* Spacing — generoso para lectura larga */
+  --mode-bubble-padding:       var(--spacing-6);
+  --mode-message-gap:          var(--spacing-4);
+  --mode-content-max-width:    68ch;
+
+  /* Typography */
+  --mode-font-body:            var(--font-serif);
+  --mode-leading-body:         var(--leading-lg);
+  --mode-text-body:            var(--text-md);
+}
+
+[data-mode="professional"] {
+  /* MD3 color roles */
+  --mode-primary:              var(--color-brand-700);
+  --mode-on-primary:           var(--color-white);
+  --mode-primary-container:    var(--color-brand-100);
+  --mode-on-primary-container: var(--color-brand-900);
+  --mode-surface:              var(--color-gray-25);
+  --mode-on-surface:           var(--color-gray-900);
+  --mode-surface-container:    var(--color-gray-100);
+  --mode-outline:              var(--color-gray-300);
+
+  /* Code-first accents */
+  --mode-code-bg:              var(--color-gray-900);
+  --mode-code-fg:              var(--color-gray-50);
+  --mode-callout-border:       var(--color-brand-400);
+
+  /* Spacing — denso, código a ancho completo */
+  --mode-bubble-padding:       var(--spacing-3);
+  --mode-message-gap:          var(--spacing-2);
+  --mode-content-max-width:    100%;
+
+  /* Typography */
+  --mode-font-body:            var(--font-mono);
+  --mode-leading-body:         var(--leading-md);
+  --mode-text-body:            var(--text-sm);
+}
