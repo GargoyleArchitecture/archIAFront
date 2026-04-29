@@ -16,7 +16,7 @@
  *   extractRagSources  — extrae las fuentes RAG de mensajes internos
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   sendMessage    as aiSendMessage,
   sendFeedback   as apiSendFeedback,
@@ -95,6 +95,10 @@ export function useChatManager({ projectId = null } = {}) {
   const [isLoading,     setIsLoading]     = useState(false)
 
   const requestSeq = useRef(0)
+  const hasRemoteSession = useCallback(
+    (id) => sessions.some((s) => s.id === id),
+    [sessions]
+  )
 
   /* isBusy: true mientras haya un mensaje con pending=true */
   const isBusy = useMemo(() => messages.some((m) => m.pending), [messages])
@@ -132,24 +136,27 @@ export function useChatManager({ projectId = null } = {}) {
         setSessionId(normalized[0].id)
       })
       .catch(() => {
-        /* degradación: sesión in-memory si el API falla */
-        const id = uuid()
-        setSessions([{ id, title: 'Nuevo chat', createdAt: Date.now() }])
-        setSessionId(id)
+        /* En modo proyecto solo aceptamos chats persistidos en el API. */
+        setSessions([])
+        setSessionId(null)
+        setMessages([])
       })
       .finally(() => setIsLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   /* ── Carga mensajes al cambiar de sesión (solo en modo API) ── */
   useEffect(() => {
     if (!sessionId || !projectId) return
+    if (!hasRemoteSession(sessionId)) {
+      setMessages([])
+      return
+    }
     setIsLoading(true)
     fetchMessages(sessionId)
       .then(setMessages)
       .catch(() => setMessages([]))
       .finally(() => setIsLoading(false))
-  }, [sessionId, projectId])
+  }, [sessionId, projectId, hasRemoteSession])
 
   /* ================================================================
      OPERACIONES SOBRE SESIONES
@@ -185,7 +192,7 @@ export function useChatManager({ projectId = null } = {}) {
 
   const renameSession = (id, title) => {
     setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title } : s)))
-    if (projectId) {
+    if (projectId && hasRemoteSession(id)) {
       updateChat(id, { title }).catch(() => {})
     }
   }
@@ -196,7 +203,7 @@ export function useChatManager({ projectId = null } = {}) {
     const remaining = sessions.filter((s) => s.id !== id)
     setSessions(remaining)
 
-    if (projectId) {
+    if (projectId && hasRemoteSession(id)) {
       deleteChat(id).catch(() => {})
     }
 
@@ -240,7 +247,7 @@ export function useChatManager({ projectId = null } = {}) {
 
     try {
       /* Persistir mensaje del usuario en el Backend API */
-      if (projectId) {
+      if (projectId && hasRemoteSession(sessionId)) {
         await persistMessage(sessionId, { content: textToSend, role: 'USER' })
       }
 
@@ -257,7 +264,7 @@ export function useChatManager({ projectId = null } = {}) {
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
 
       /* Persistir respuesta del asistente en el Backend API */
-      if (projectId) {
+      if (projectId && hasRemoteSession(sessionId)) {
         await persistMessage(sessionId, { content: result.text, role: 'AI' })
       }
 

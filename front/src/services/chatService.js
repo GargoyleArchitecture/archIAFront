@@ -19,15 +19,23 @@ function getToken() {
   return localStorage.getItem('archia.accessToken') || ''
 }
 
+function notifyAuthExpired() {
+  localStorage.removeItem('archia.accessToken')
+  localStorage.removeItem('archia.refreshToken')
+  localStorage.removeItem('archia.user')
+  window.dispatchEvent(new Event('archia-auth-expired'))
+}
+
 /* ================================================================
    Helper para llamadas al Backend API (JSON, con Bearer token)
 ================================================================ */
 
 async function apiRequest(url, { headers = {}, ...rest } = {}) {
+  const token = getToken()
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     ...rest,
@@ -35,6 +43,9 @@ async function apiRequest(url, { headers = {}, ...rest } = {}) {
   const json = res.headers.get('content-type')?.includes('application/json')
     ? await res.json()
     : null
+  if (res.status === 401) {
+    notifyAuthExpired()
+  }
   if (!res.ok) {
     throw new Error(json?.message || `HTTP ${res.status}`)
   }
