@@ -1622,5 +1622,78 @@ Tokens específicos por modo (no compartidos):
 
 ---
 
+## 12. Catálogo Fase 8-11
+
+Componentes y módulos entregados en las fases finales del proyecto:
+
+### Átomos nuevos
+- **`SkeletonAtom`** (F8-T1) — placeholder visual con `animate-pulse motion-reduce:animate-none`. Reusable por moléculas de loading.
+- **`SeverityBadgeAtom`** (F8-T4 / F10-T2) — badge Alta/Media/Baja/`—` con helper `severityFromMastery` exportado.
+- **`MonoTagAtom`** (F10-T2) — identificadores técnicos (`unifier`, slugs) en `font-mono` con borde.
+- **`ConceptPillAtom`** (F10-T2) — pill semántico polimórfico (span ↔ button con onClick).
+- **`ModeSuggestionChipAtom`** (F7-T3) — chip inline de cambio de modo en respuestas IA.
+
+### Moléculas nuevas
+- **`StrengthChip`** (F8-T3) — fortaleza con microtexto "vigente desde dd/mm" + tooltip.
+- **`WeaknessActionCard`** (F8-T4) — debilidad con CTA "Generar reto" y máquina de estados.
+- **`ForgettingCurveList`** (F8-T5) — `opacity = max(0.25, exp(-decayRate * deltaDays))`.
+- **`ResponseSkeleton`** (F9-T2) — skeleton semántico por modo.
+- **`RoutineProgressBar`** (F9-T3) — barra de 4 segmentos (description/attempt/feedback/recap).
+- **`ChallengeBlock`** (F9-T1) — reto pedagógico completo con submit.
+- **`ModeSuggestionSnackbar`** (F7-T2) — auto-dismiss 8s, persistencia 24h del "ignorar".
+- **`CompetencyCard`** (F10-T3) — competencia con severidad + subconceptos.
+- **`CodeDiffBlock`** (F10-T3) — before/after side-by-side reusando CodeBlock.
+- **`ConceptCloud`** (F10-T3) — nube con `fontSize` lineal según weight.
+
+### Organismos nuevos
+- **`RadarChart`** (F8-T2) — spider chart SVG puro, top-6 por lastSeenAt DESC, responsive, respeta reduce-motion.
+- **`AgentMessageDispatcher`** (F10-T1) — enruta mensajes del agente (`name` → componente). Mapeo en `src/data/agentJsonMap.js`.
+
+### Contextos / Hooks
+- **`ModeContext`** (F1-T5) — tutor/professional en localStorage + `data-mode` en `<html>`.
+- **`FeaturesContext`** (F11-T5) — feature flags por tenant.
+- **`useTelemetry`** (F11-T6) — wrapper de `telemetryService.emit` con `userId` inyectado.
+- **`useKeyboardShortcuts`** (F6-T5) — Ctrl+M, Ctrl+K, Ctrl+/.
+
+### Utils
+- `profileHydration.js` — `hydrateNames`, `formatDateShort`, `humanizeDelta`.
+- `radarMath.js` — `polarToCartesian`, `buildAxes`, `buildPolygon`, `pickTop6ByLastSeen`, `buildLabelPosition`.
+
+---
+
+## 13. Atajos de teclado (F6-T5)
+
+| Atajo | Acción |
+|---|---|
+| `Ctrl+M` / `Cmd+M` | Toggle modo (Tutor ↔ Professional) |
+| `Ctrl+K` / `Cmd+K` | Foco en `MessageInput` del chat |
+| `Ctrl+/` / `Cmd+/` | Paleta de comandos (placeholder F11+) |
+
+Detección de plataforma con `navigator.userAgentData.platform` (fallback a `navigator.platform`). Tooltip en topbar muestra "Cmd+..." en macOS, "Ctrl+..." en Windows/Linux.
+
+---
+
+## 14. Markdown diferenciado por modo (F9-T4)
+
+`MarkdownRenderer` consume `useMode()` y aplica:
+
+- **Tutor**: `blockquote` se envuelve con icono `LightbulbOutlinedIcon` (callout pedagógico).
+- **Tutor**: párrafos cuyo último nodo textual termina en `?` se marcan con `data-socratic="true"` (border-l-4 + semibold).
+- **Tutor**: enlaces `[Texto](glossary:Term)` → tooltip definitorio (placeholder hasta que el corpus glossary se ingieste).
+- **Profesional**: blockquote sin icono, párrafos sin énfasis socrático, enlaces glossary neutralizados a `<span>` con subrayado punteado.
+
+`react-markdown` v10 requiere `urlTransform` custom para preservar el esquema `glossary:` (sanitización por default).
+
+---
+
+## 15. Accesibilidad (F11-T3)
+
+- Suite `axe-core` en CI: 0 issues nivel A en `ProfileView` (ready + empty) y `ChallengeBlock` standalone.
+- Issues nivel AA documentados como advisory (no fail). Plan en `docs/a11y_audit.md`.
+- Patrón "tabla `sr-only` para SVG complejos" usado en `RadarChart` (vertices `aria-hidden`, datos completos en tabla oculta visualmente).
+- `prefers-reduced-motion: reduce` respetado en `SkeletonAtom`, `ResponseSkeleton`, `RoutineProgressBar`, animación SVG del radar.
+
+---
+
 *ArchIA Design System — Atomic Design + Tailwind CSS v4 + React 19*
-*Última actualización: 2026-04-28*
+*Última actualización: 2026-05-08 — Fase 11 completada*

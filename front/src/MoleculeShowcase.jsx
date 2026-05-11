@@ -53,6 +53,10 @@ import CodeBlock          from './components/molecules/CodeBlock'
 
 /* Organisms */
 import MarkdownRenderer from './components/organisms/MarkdownRenderer'
+/* F10-T3: moléculas especializadas para el catálogo Agente → Atomic Design */
+import CompetencyCard   from './components/molecules/CompetencyCard'
+import CodeDiffBlock    from './components/molecules/CodeDiffBlock'
+import ConceptCloud     from './components/molecules/ConceptCloud'
 
 /* ================================================================
    NAV — lista de secciones para el sidebar
@@ -76,6 +80,10 @@ const NAV_ITEMS = [
   { id: 'alert-dialog',   label: 'AlertDialog'   },
   { id: 'code-block',          label: 'CodeBlock'          },
   { id: 'markdown-renderer',   label: 'MarkdownRenderer ✦', type: 'organism' },
+  /* F10-T3 — moléculas especializadas */
+  { id: 'competency-card',     label: 'CompetencyCard'     },
+  { id: 'code-diff-block',     label: 'CodeDiffBlock'      },
+  { id: 'concept-cloud',       label: 'ConceptCloud'       },
 ]
 
 /* ================================================================
@@ -1863,6 +1871,144 @@ function MarkdownRendererSection() {
 }
 
 /* ================================================================
+   F10-T3 SECCIÓN: CompetencyCard
+================================================================ */
+function CompetencyCardSection() {
+  return (
+    <ShowcaseSection
+      id="competency-card"
+      title="CompetencyCard"
+      description="Tarjeta de competencia: nombre + severidad derivada de mastery + subconceptos como pills + microtexto de último visto. Reusa SeverityBadgeAtom (F8-T4) y ConceptPillAtom (F10-T2)."
+    >
+      <VariantGroup label="Variantes por severidad">
+        <ShowcaseItem label="mastery 0.20 → Alta">
+          <CompetencyCard
+            name="Concurrency"
+            mastery={0.20}
+            concepts={['locks', 'channels', 'actor model']}
+            lastSeenAt="2026-03-10T10:00:00Z"
+          />
+        </ShowcaseItem>
+        <ShowcaseItem label="mastery 0.45 → Media">
+          <CompetencyCard
+            name="Caching"
+            mastery={0.45}
+            concepts={['LRU', 'invalidation']}
+            lastSeenAt="2026-04-15T10:00:00Z"
+          />
+        </ShowcaseItem>
+        <ShowcaseItem label="mastery 0.85 → Baja">
+          <CompetencyCard
+            name="SOLID principles"
+            mastery={0.85}
+            concepts={['SRP', 'OCP', 'DIP']}
+            lastSeenAt="2026-05-01T10:00:00Z"
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Sin metadata">
+        <ShowcaseItem label="Sólo name">
+          <CompetencyCard name="Domain Driven Design" />
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
+   F10-T3 SECCIÓN: CodeDiffBlock
+================================================================ */
+function CodeDiffBlockSection() {
+  return (
+    <ShowcaseSection
+      id="code-diff-block"
+      title="CodeDiffBlock"
+      description="Comparación visual antes/después con paneles lado a lado (o apilados en mobile). Cada panel reusa el CodeBlock existente con su highlighting completo."
+    >
+      <VariantGroup label="Refactor con caption" direction="col">
+        <ShowcaseItem label='caption + language="python"'>
+          <CodeDiffBlock
+            caption="Refactor de caching naïve"
+            language="python"
+            before={`def get(key):\n    return cache.get(key)`}
+            after={`def get(key):\n    return cache.get_or_compute(\n        key, lambda: heavy_compute(key)\n    )`}
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Sin caption + JS" direction="col">
+        <ShowcaseItem label='language="javascript"'>
+          <CodeDiffBlock
+            language="javascript"
+            before={`items.forEach(it => api.fetch(it.id))`}
+            after={`await Promise.all(items.map(it => api.fetch(it.id)))`}
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Un solo panel" direction="col">
+        <ShowcaseItem label="solo after (acepta uno de los dos)">
+          <CodeDiffBlock
+            language="plaintext"
+            after={`Sólo el panel "Después" se renderiza cuando before está vacío.`}
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
+   F10-T3 SECCIÓN: ConceptCloud
+================================================================ */
+function ConceptCloudSection() {
+  return (
+    <ShowcaseSection
+      id="concept-cloud"
+      title="ConceptCloud"
+      description="Nube de conceptos con tamaño tipográfico variable por weight 0..1. Sort por weight DESC. Reusa ConceptPillAtom (F10-T2)."
+    >
+      <VariantGroup label="Cloud con pesos variados" direction="col">
+        <ShowcaseItem label="weights 0.1 → 0.9">
+          <ConceptCloud
+            concepts={[
+              { name: 'SOLID',         weight: 0.95 },
+              { name: 'Microservices', weight: 0.80 },
+              { name: 'Caching',       weight: 0.65 },
+              { name: 'CQRS',          weight: 0.45 },
+              { name: 'Event Sourcing', weight: 0.30 },
+              { name: 'Saga',          weight: 0.20 },
+              { name: 'Sharding',      weight: 0.15 },
+            ]}
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Intent primary + size custom" direction="col">
+        <ShowcaseItem label="minSize=14 maxSize=24 intent=primary">
+          <ConceptCloud
+            intent="primary"
+            minSize={14}
+            maxSize={24}
+            concepts={[
+              { name: 'Tutor',       weight: 1.0 },
+              { name: 'Professional', weight: 0.5 },
+            ]}
+          />
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Empty state" direction="col">
+        <ShowcaseItem label="concepts={[]}">
+          <ConceptCloud concepts={[]} />
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
    COMPONENTE PRINCIPAL: MoleculeShowcase
 ================================================================ */
 export default function MoleculeShowcase({ onNavigate }) {
@@ -1970,6 +2116,10 @@ export default function MoleculeShowcase({ onNavigate }) {
           <AlertDialogSection />
           <CodeBlockSection />
           <MarkdownRendererSection />
+          {/* F10-T3 — moléculas especializadas */}
+          <CompetencyCardSection />
+          <CodeDiffBlockSection />
+          <ConceptCloudSection />
 
           {/* Footer */}
           <footer className="border-t border-gray-200 pt-6 pb-10 text-center">

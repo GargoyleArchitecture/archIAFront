@@ -236,20 +236,52 @@
   --mode-surface-container:    var(--color-secondary-50);
   --mode-outline:              var(--color-secondary-300);
 
-  /* Pedagogical accents */
+  /* Pedagogical accents — citas y analogías destacadas en ámbar cálido */
   --mode-blockquote-bg:        var(--color-warning-50);
   --mode-blockquote-fg:        var(--color-warning-900);
   --mode-callout-border:       var(--color-warning-300);
+
+  /* Code accents — inline cálido suave; bloques mantienen oscuro para contraste */
+  --mode-code-bg:              var(--color-warning-50);
+  --mode-code-fg:              var(--color-gray-900);
+  --mode-code-block-bg:        var(--color-gray-900);
+  --mode-code-block-fg:        var(--color-gray-50);
+
+  /* Bubble — fondos cálidos */
+  --mode-bubble-bg-user:       var(--color-secondary-100);
+  --mode-bubble-bg-ai:         var(--color-white);
+  --mode-bubble-border-ai:     var(--color-secondary-200);
+  --mode-bubble-max-width:     75%;
+
+  /* Input */
+  --mode-input-bg:             var(--color-white);
+  --mode-input-border:         var(--color-secondary-200);
+  --mode-input-border-focus:   var(--color-secondary-500);
+
+  /* Texto secundario / muted */
+  --mode-text-secondary:       var(--color-gray-600);
 
   /* Spacing — generoso para lectura larga */
   --mode-bubble-padding:       var(--spacing-6);
   --mode-message-gap:          var(--spacing-4);
   --mode-content-max-width:    68ch;
+  --mode-list-spacing:         var(--spacing-2);
 
   /* Typography */
   --mode-font-body:            var(--font-serif);
   --mode-leading-body:         var(--leading-lg);
   --mode-text-body:            var(--text-md);
+
+  /* Tablas — tonos cálidos para modo pedagógico */
+  --mode-table-header-bg:      var(--color-secondary-50);
+  --mode-table-border:         var(--color-secondary-200);
+  --mode-table-text:           var(--color-gray-800);
+  --mode-table-text-header:    var(--color-gray-900);
+  --mode-table-hover-bg:       var(--color-secondary-25);
+  --mode-table-divider:        var(--color-secondary-100);
+
+  /* Code block header */
+  --mode-code-header-bg:       var(--color-gray-800);
 }
 
 [data-mode="professional"] {
@@ -263,18 +295,68 @@
   --mode-surface-container:    var(--color-gray-100);
   --mode-outline:              var(--color-gray-300);
 
-  /* Code-first accents */
-  --mode-code-bg:              var(--color-gray-900);
-  --mode-code-fg:              var(--color-gray-50);
+  /* Pedagogical accents — citas grises sobrias en lugar del ámbar de tutor */
+  --mode-blockquote-bg:        var(--color-gray-100);
+  --mode-blockquote-fg:        var(--color-gray-700);
   --mode-callout-border:       var(--color-brand-400);
+
+  /* Code-first accents — inline en gris-100 (no en oscuro para no chocar con bloques) */
+  --mode-code-bg:              var(--color-gray-100);
+  --mode-code-fg:              var(--color-gray-900);
+  --mode-code-block-bg:        var(--color-gray-900);
+  --mode-code-block-fg:        var(--color-gray-50);
+
+  /* Bubble — fondos fríos */
+  --mode-bubble-bg-user:       var(--color-brand-100);
+  --mode-bubble-bg-ai:         var(--color-white);
+  --mode-bubble-border-ai:     var(--color-gray-200);
+  --mode-bubble-max-width:     85%;
+
+  /* Input */
+  --mode-input-bg:             var(--color-gray-25);
+  --mode-input-border:         var(--color-gray-300);
+  --mode-input-border-focus:   var(--color-brand-500);
+
+  /* Texto secundario / muted */
+  --mode-text-secondary:       var(--color-gray-600);
 
   /* Spacing — denso, código a ancho completo */
   --mode-bubble-padding:       var(--spacing-3);
   --mode-message-gap:          var(--spacing-2);
   --mode-content-max-width:    100%;
+  --mode-list-spacing:         var(--spacing-1);
 
   /* Typography */
   --mode-font-body:            var(--font-mono);
   --mode-leading-body:         var(--leading-md);
   --mode-text-body:            var(--text-sm);
+
+  /* Tablas — tonos fríos para modo profesional, contraste WCAG AA */
+  --mode-table-header-bg:      var(--color-gray-100);
+  --mode-table-border:         var(--color-gray-300);
+  --mode-table-text:           var(--color-gray-700);
+  --mode-table-text-header:    var(--color-gray-800);
+  --mode-table-hover-bg:       var(--color-gray-50);
+  --mode-table-divider:        var(--color-gray-200);
+
+  /* Code block header */
+  --mode-code-header-bg:       var(--color-gray-800);
+}
+
+/* ============================================================
+   THEME TRANSITION — animación suave al togglar modo
+   Aplica a propiedades que cambian con --mode-*. Se excluyen
+   font-family y font-size porque los browsers no pueden
+   interpolar familias y produce flicker durante el cambio.
+   Componentes opt-in agregando la clase `theme-transition`.
+   ============================================================ */
+
+.theme-transition,
+.theme-transition * {
+  transition:
+    background-color 200ms ease,
+    color            200ms ease,
+    border-color     200ms ease,
+    padding          200ms ease,
+    box-shadow       200ms ease;
 }

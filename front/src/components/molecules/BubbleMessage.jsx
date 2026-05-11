@@ -1,22 +1,33 @@
 /**
- * <BubbleMessage /> — Burbuja de mensaje de chat
+ * <BubbleMessage /> — Burbuja de mensaje de chat (con theming dual F6-T3 / F6-T4)
  *
  * Dos variantes según el emisor:
- *   user — Derecha, fondo brand-100 cálido, esquina redondeada inferior-derecha pequeña
- *   ai   — Izquierda, fondo blanco con borde y sombra, esquina inferior-izquierda pequeña
- *          + slot opcional de avatar al lado de la burbuja
+ *   user — Derecha, fondo `--mode-bubble-bg-user`, esquina inferior-derecha pequeña.
+ *   ai   — Izquierda, fondo `--mode-bubble-bg-ai` con borde `--mode-bubble-border-ai`,
+ *          esquina inferior-izquierda pequeña + slot opcional de avatar.
+ *
+ * Theming:
+ *   - Padding, max-width, font-family, line-height y font-size se leen de
+ *     tokens `--mode-*` que cambian con `data-mode` en <html>.
+ *   - Tutor: padding 24px, serif, line-height generoso, max 75%.
+ *   - Professional: padding 12px, monospace, line-height denso, max 85%.
+ *   - Transición suave (200ms) vía clase `theme-transition` global.
  *
  * Props:
- *   variant   — 'user' | 'ai'
- *   children  — ReactNode   Contenido del mensaje
- *   isLoading — bool        Muestra indicador de escritura en lugar del contenido
- *   avatar    — ReactNode   Elemento de avatar (solo variante 'ai')
- *   timestamp — string      Hora del mensaje, debajo de la burbuja
- *   className — string      Clases adicionales para el wrapper
+ *   variant    — 'user' | 'ai'
+ *   children   — ReactNode
+ *   isLoading  — bool        Indicador de escritura
+ *   noTextWrap — bool        Si true, NO envuelve children en <div> tipográfico
+ *                            (útil cuando children ya es <MarkdownRenderer />)
+ *   avatar     — ReactNode   Solo aplicable a variante 'ai'
+ *   timestamp  — string
+ *   className  — string
  */
 
 import BoxAtom  from '../atoms/BoxAtom'
 import TextAtom from '../atoms/TextAtom'
+import ResponseSkeleton from './ResponseSkeleton'
+import { useMode } from '../../contexts/ModeContext'
 
 /* ----------------------------------------------------------------
    Indicador de escritura animado (uso interno)
@@ -27,8 +38,11 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
-          style={{ animationDelay: `${i * 150}ms` }}
+          className="w-2 h-2 rounded-full animate-bounce"
+          style={{
+            backgroundColor: 'var(--mode-text-secondary)',
+            animationDelay: `${i * 150}ms`,
+          }}
         />
       ))}
     </BoxAtom>
@@ -36,16 +50,16 @@ function TypingDots() {
 }
 
 /* ----------------------------------------------------------------
-   Mapeo variant → clases del wrapper y de la burbuja
+   Mapeo variant → wrapper + estilos derivados de tokens --mode-*
 ---------------------------------------------------------------- */
 const ROW_JUSTIFY = {
   user: 'end',
   ai:   'start',
 }
 
-const BUBBLE_CLASS = {
-  user: 'bg-brand-100 text-gray-900 rounded-lg rounded-br-sm shadow-xs max-w-[75%] px-4 py-2.5',
-  ai:   'bg-white border border-gray-100 text-gray-800 rounded-lg rounded-bl-sm shadow-sm max-w-[75%] px-4 py-2.5',
+const BUBBLE_RADIUS = {
+  user: 'rounded-lg rounded-br-sm',
+  ai:   'rounded-lg rounded-bl-sm',
 }
 
 const TIMESTAMP_CLASS = {
@@ -53,18 +67,54 @@ const TIMESTAMP_CLASS = {
   ai:   'text-left',
 }
 
+/**
+ * Construye el `style` inline de la burbuja desde tokens --mode-*.
+ * Usar inline en lugar de clases Tailwind con arbitrary values nos asegura
+ * reactividad 1:1 al cambio de `data-mode` sin escape-hatches.
+ */
+function bubbleStyle(variant) {
+  const base = {
+    backgroundColor:
+      variant === 'user'
+        ? 'var(--mode-bubble-bg-user)'
+        : 'var(--mode-bubble-bg-ai)',
+    color: 'var(--mode-on-surface)',
+    padding: 'var(--mode-bubble-padding)',
+    maxWidth: 'var(--mode-bubble-max-width)',
+  }
+  if (variant === 'ai') {
+    base.border = '1px solid var(--mode-bubble-border-ai)'
+  }
+  return base
+}
+
+const TYPOGRAPHY_STYLE = {
+  fontFamily: 'var(--mode-font-body)',
+  lineHeight: 'var(--mode-leading-body)',
+  fontSize: 'var(--mode-text-body)',
+}
+
 export default function BubbleMessage({
-  variant     = 'ai',
+  variant    = 'ai',
   children,
-  isLoading   = false,
-  noTextWrap  = false,
+  isLoading  = false,
+  noTextWrap = false,
   avatar,
   timestamp,
-  className   = '',
+  className  = '',
   ...props
 }) {
+  // F9-T2: lectura del modo actual para variar el skeleton durante isLoading.
+  const { mode } = useMode()
   return (
-    <BoxAtom display="flex" direction="col" w="full" gap="1" className={className} {...props}>
+    <BoxAtom
+      display="flex"
+      direction="col"
+      w="full"
+      gap="1"
+      className={className}
+      {...props}
+    >
 
       {/* Fila con avatar (AI) + burbuja */}
       <BoxAtom display="flex" align="end" justify={ROW_JUSTIFY[variant]} gap="2" w="full">
@@ -76,16 +126,23 @@ export default function BubbleMessage({
           </BoxAtom>
         )}
 
-        {/* Burbuja de mensaje */}
-        <div className={BUBBLE_CLASS[variant]}>
+        {/* Burbuja de mensaje — theme-transition para animación suave entre modos */}
+        <div
+          data-variant={variant}
+          className={['theme-transition shadow-xs', BUBBLE_RADIUS[variant]].join(' ')}
+          style={bubbleStyle(variant)}
+        >
           {isLoading ? (
-            <TypingDots />
+            /* F9-T2: skeleton semántico por modo reemplaza TypingDots genéricos.
+               TypingDots queda disponible más arriba en este módulo como
+               fallback histórico, pero no se renderiza por defecto. */
+            <ResponseSkeleton mode={mode} />
           ) : noTextWrap ? (
             children
           ) : (
-            <TextAtom variant="text-sm" className="text-inherit leading-relaxed">
+            <div style={TYPOGRAPHY_STYLE}>
               {children}
-            </TextAtom>
+            </div>
           )}
         </div>
       </BoxAtom>
@@ -95,7 +152,8 @@ export default function BubbleMessage({
         <TextAtom
           variant="text-xs"
           as="span"
-          className={['text-gray-400 px-1', TIMESTAMP_CLASS[variant]].join(' ')}
+          className={['px-1', TIMESTAMP_CLASS[variant]].join(' ')}
+          style={{ color: 'var(--mode-text-secondary)' }}
         >
           {timestamp}
         </TextAtom>

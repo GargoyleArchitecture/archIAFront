@@ -96,10 +96,24 @@ export default function CodeBlock({
   }
 
   return (
-    <BoxAtom rounded="lg" bg="gray-900" shadow="md" className={['overflow-hidden', className].filter(Boolean).join(' ')} {...props}>
+    <BoxAtom
+      rounded="lg"
+      shadow="md"
+      className={['overflow-hidden theme-transition', className].filter(Boolean).join(' ')}
+      style={{ backgroundColor: 'var(--mode-code-block-bg)' }}
+      {...props}
+    >
 
       {/* ── Header ── */}
-      <BoxAtom display="flex" align="center" justify="between" px="4" py="2" className="bg-gray-800 select-none">
+      <BoxAtom
+        display="flex"
+        align="center"
+        justify="between"
+        px="4"
+        py="2"
+        className="select-none theme-transition"
+        style={{ backgroundColor: 'var(--mode-code-header-bg)' }}
+      >
 
         {/* Indicador de lenguaje */}
         <span

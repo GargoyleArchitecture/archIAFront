@@ -24,17 +24,26 @@
 
 import BoxAtom from '../atoms/BoxAtom'
 
+/**
+ * F6-T3 / F6-T4: el gap entre mensajes y el fondo del scroll-pane se leen
+ * de los tokens --mode-*. Tutor genera más respiración (--mode-message-gap=16px),
+ * Professional aprieta (--mode-message-gap=8px). El fondo del contenedor
+ * sigue --mode-surface (cálido en tutor / frío en professional).
+ */
 export default function ChatContainer({ children, className = '', ...props }) {
   return (
     <BoxAtom
       display="flex"
       direction="col"
-      gap="4"
       w="full"
       overflow="y-auto"
       px="4"
       py="4"
-      className={['min-h-0', className].filter(Boolean).join(' ')}
+      className={['min-h-0 theme-transition', className].filter(Boolean).join(' ')}
+      style={{
+        gap: 'var(--mode-message-gap)',
+        backgroundColor: 'var(--mode-surface)',
+      }}
       {...props}
     >
       {children}

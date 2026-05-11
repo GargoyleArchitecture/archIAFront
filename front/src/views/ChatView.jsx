@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useMode } from '../contexts/ModeContext'
 
 /* MUI Icons — solo iconos SVG, cero componentes de MUI */
 import SmartToyIcon      from '@mui/icons-material/SmartToy'
@@ -31,12 +32,16 @@ import ButtonAtom  from '../components/atoms/ButtonAtom'
 import TooltipAtom from '../components/atoms/TooltipAtom'
 
 /* Molecules */
-import BubbleMessage from '../components/molecules/BubbleMessage'
-import ChatContainer from '../components/molecules/ChatContainer'
-import ChatHistory   from '../components/molecules/ChatHistory'
-import MessageInput  from '../components/molecules/MessageInput'
-import Modal         from '../components/molecules/Modal'
-import DiagramViewer from '../components/DiagramViewer'
+import BubbleMessage           from '../components/molecules/BubbleMessage'
+import ChatContainer           from '../components/molecules/ChatContainer'
+import ChatHistory             from '../components/molecules/ChatHistory'
+import MessageInput            from '../components/molecules/MessageInput'
+import Modal                   from '../components/molecules/Modal'
+import DiagramViewer           from '../components/DiagramViewer'
+import ModeSuggestionSnackbar  from '../components/molecules/ModeSuggestionSnackbar'
+
+/* Atoms — F7-T3 */
+import ModeSuggestionChipAtom  from '../components/atoms/ModeSuggestionChipAtom'
 
 /* Organisms */
 import MarkdownRenderer from '../components/organisms/MarkdownRenderer'
@@ -54,6 +59,10 @@ import DEMO_MESSAGES from '../data/demoMessages'
 /* ----------------------------------------------------------------
    Constantes de vista
 ---------------------------------------------------------------- */
+/** F7-T3: respuestas más cortas que este umbral muestran el chip inline;
+ *  las más largas usan el Snackbar flotante (F7-T2). */
+const MODE_CHIP_MAX_TEXT_LENGTH = 500
+
 const DISCLAIMER =
   'ArquIA es un asistente para arquitectas y arquitectos de software: acelera análisis, tácticas y diagramas. Puede cometer errores; verifica siempre la información importante.'
 
@@ -170,6 +179,9 @@ function FeedbackButtons({ sessionId, messageId, rated, onRate }) {
    COMPONENTE PRINCIPAL
 ================================================================ */
 export default function ChatView({ demo = false, onNavigate }) {
+  /* ── Modo activo — F7-T2 / F7-T3 ── */
+  const { mode, setMode } = useMode()
+
   /* ── Lógica del chat (hook) ── */
   const {
     sessions,
@@ -199,9 +211,13 @@ export default function ChatView({ demo = false, onNavigate }) {
   const [selectedInternalMessages, setSelectedInternalMessages] = useState([])
   const [selectedRagSources,       setSelectedRagSources]       = useState([])
   const [attachedImages,           setAttachedImages]           = useState([])
+  /** F7-T2: sugerencia activa para el Snackbar (solo respuestas largas). */
+  const [snackbarSuggestion,       setSnackbarSuggestion]       = useState(null)
 
-  const fileInputRef  = useRef(null)
-  const messagesEndRef = useRef(null)
+  const fileInputRef        = useRef(null)
+  const messagesEndRef      = useRef(null)
+  /** Evita reprocesar la sugerencia del mismo mensaje al cambiar el modo. */
+  const lastSuggestionMsgId = useRef(null)
 
   /* ── Escucha evento externo para toggle del sidebar ── */
   useEffect(() => {
@@ -214,6 +230,30 @@ export default function ChatView({ demo = false, onNavigate }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  /* ── F7-T2 / F7-T3: despacho de sugerencia de modo al terminar turno ──
+     Busca el último mensaje AI no pendiente con modeSuggestion distinto al
+     modo actual. Si el texto es largo → Snackbar flotante; si es corto →
+     chip inline (gestionado en el render). Usa ref para no reprocesar el
+     mismo mensaje cuando `mode` cambia tras aceptar la sugerencia. */
+  useEffect(() => {
+    if (demo) return
+    const lastAi = [...messages]
+      .reverse()
+      .find((m) => m.sender === 'respuesta' && !m.pending)
+
+    if (!lastAi?.modeSuggestion)                    return
+    if (lastAi.modeSuggestion === mode)              return
+    if (lastAi.id === lastSuggestionMsgId.current)  return
+
+    lastSuggestionMsgId.current = lastAi.id
+
+    const textLen = (lastAi.text || '').replace(/<[^>]*>/g, '').length
+    if (textLen > MODE_CHIP_MAX_TEXT_LENGTH) {
+      setSnackbarSuggestion(lastAi.modeSuggestion)
+    }
+    // Respuesta corta → chip se renderiza inline, sin snackbar.
+  }, [messages, mode, demo])
 
   /* ── Gestión de imágenes adjuntas ── */
   const handleFileChange = (e) => {
@@ -529,6 +569,20 @@ export default function ChatView({ demo = false, onNavigate }) {
                       rated={isRated}
                       onRate={rateMessage}
                     />
+                    {/* F7-T3: chip inline cuando la respuesta es corta */}
+                    {msg.modeSuggestion
+                      && msg.modeSuggestion !== mode
+                      && cleanedText.length <= MODE_CHIP_MAX_TEXT_LENGTH
+                      && (
+                        <ModeSuggestionChipAtom
+                          suggestedMode={msg.modeSuggestion}
+                          onClick={() => {
+                            setMode(msg.modeSuggestion)
+                            setSnackbarSuggestion(null)
+                          }}
+                        />
+                      )
+                    }
                   </>
                 )}
               </div>
@@ -644,6 +698,19 @@ export default function ChatView({ demo = false, onNavigate }) {
           </TextAtom>
         </div>
       </Modal>
+
+      {/* ============================================================
+          SNACKBAR: Sugerencia de cambio de modo (F7-T2)
+          Solo aparece en respuestas largas (> MODE_CHIP_MAX_TEXT_LENGTH).
+      ============================================================ */}
+      <ModeSuggestionSnackbar
+        suggestion={snackbarSuggestion}
+        onAccept={(suggestedMode) => {
+          setMode(suggestedMode)
+          setSnackbarSuggestion(null)
+        }}
+        onDismiss={() => setSnackbarSuggestion(null)}
+      />
 
       {/* ============================================================
           MODAL: Mensajes internos del agente

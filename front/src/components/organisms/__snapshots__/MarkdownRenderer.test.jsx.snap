@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MarkdownRenderer — theming F6-T3 / F6-T4 > snapshot del blockquote en professional (nota técnica) 1`] = `
+<blockquote
+  class="border-l-4 pl-4 pr-3 py-2 my-4 rounded-r-md italic font-sans text-body-sm"
+  style="border-color: var(--mode-callout-border); background-color: var(--mode-blockquote-bg); color: var(--mode-blockquote-fg);"
+>
+  
+
+  <p
+    class="text-body-sm leading-relaxed mb-3 last:mb-0"
+    style="color: var(--mode-on-surface);"
+  >
+    Cache LRU con TTL de 5 minutos para evitar thundering herd.
+  </p>
+  
+
+</blockquote>
+`;
+
+exports[`MarkdownRenderer — theming F6-T3 / F6-T4 > snapshot del blockquote en tutor (callout pedagógico) 1`] = `
+<blockquote
+  class="border-l-4 pl-4 pr-3 py-2 my-4 rounded-r-md italic font-sans text-body-sm"
+  style="border-color: var(--mode-callout-border); background-color: var(--mode-blockquote-bg); color: var(--mode-blockquote-fg);"
+>
+  <span
+    class="flex items-start gap-2"
+  >
+    <svg
+      aria-hidden="true"
+      class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+      data-testid="callout-icon"
+      focusable="false"
+      style="font-size: 18px; margin-top: 2px; flex-shrink: 0;"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7m2.85 11.1-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1"
+      />
+    </svg>
+    <span
+      class="flex-1"
+    >
+      
+
+      <p
+        class="text-body-sm leading-relaxed mb-3 last:mb-0"
+        style="color: var(--mode-on-surface);"
+      >
+        Piensa en el cache como en una alacena: lo que más usas, al frente.
+      </p>
+      
+
+    </span>
+  </span>
+</blockquote>
+`;

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { emit as emitTelemetry } from '../services/telemetryService'
 
 const STORAGE_KEY = 'arquia.mode'
 const VALID_MODES = ['tutor', 'professional']
@@ -31,11 +32,22 @@ export function ModeProvider({ children }) {
 
   const setMode = useCallback((next) => {
     if (!VALID_MODES.includes(next)) return
-    setModeState(next)
+    setModeState((prev) => {
+      if (prev !== next) {
+        // F11-T6: instrumentación de cambio de modo.
+        emitTelemetry('mode_changed', { payload: { from: prev, to: next } })
+      }
+      return next
+    })
   }, [])
 
   const toggle = useCallback(() => {
-    setModeState((m) => (m === 'tutor' ? 'professional' : 'tutor'))
+    setModeState((m) => {
+      const next = m === 'tutor' ? 'professional' : 'tutor'
+      // F11-T6: instrumentación (toggle es el camino más usado del UI).
+      emitTelemetry('mode_changed', { payload: { from: m, to: next, via: 'toggle' } })
+      return next
+    })
   }, [])
 
   return (
