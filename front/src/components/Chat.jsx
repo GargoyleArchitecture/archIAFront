@@ -451,6 +451,9 @@ export default function Chat() {
             const ratedKey = `${msg.session_id}-${msg.message_id}`;
                         // Sugerencias que vamos a mostrar en la UI
             const rawSuggestions = Array.isArray(msg.suggestions) ? msg.suggestions : [];
+            const validImages = (msg.images ?? []).filter(
+              (src) => typeof src === "string" && src.trim().length > 0
+            );
 
             // Filtra labels internos tipo "unifier", "unifier_system"
             const filteredSuggestions = rawSuggestions.filter(
@@ -522,9 +525,9 @@ export default function Chat() {
                     </Box>
                   )}
 
-                  {(msg.images?.filter((src) => typeof src === "string" && src.trim().length > 0) ?? []).length > 0 && (
+                  {validImages.length > 0 && (
                     <Box className="image-container" sx={{ mt: 1 }}>
-                      {msg.images.filter((src) => typeof src === "string" && src.trim().length > 0).map((src, i) => (
+                      {validImages.map((src, i) => (
                         <Box key={`${msg.id}-img-${i}`} component="img" src={src} className="message-image" alt={`img-${i}`} />
                       ))}
                     </Box>
