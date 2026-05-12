@@ -1,4 +1,5 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import * as authService from '../services/authService'
 
 const KEYS = {
@@ -44,6 +45,19 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
 
+  function clearStorage() {
+    localStorage.removeItem(KEYS.ACCESS)
+    localStorage.removeItem(KEYS.REFRESH)
+    localStorage.removeItem(KEYS.USER)
+  }
+
+  const clearAuthState = useCallback(() => {
+    clearStorage()
+    setUser(null)
+    setError(null)
+    setIsLoading(false)
+  }, [])
+
   /* ── Initialization: verify stored token on mount ── */
   useEffect(() => {
     let cancelled = false
@@ -51,7 +65,6 @@ export function AuthProvider({ children }) {
     async function init() {
       const storedAccess  = localStorage.getItem(KEYS.ACCESS)
       const storedRefresh = localStorage.getItem(KEYS.REFRESH)
-      const storedUser    = localStorage.getItem(KEYS.USER)
 
       if (!storedAccess) {
         setIsLoading(false)
@@ -93,13 +106,6 @@ export function AuthProvider({ children }) {
             clearStorage()
             if (!cancelled) setUser(null)
           }
-        } else if (storedUser) {
-          try {
-            if (!cancelled) setUser(JSON.parse(storedUser))
-          } catch {
-            clearStorage()
-            if (!cancelled) setUser(null)
-          }
         } else {
           clearStorage()
           if (!cancelled) setUser(null)
@@ -112,12 +118,6 @@ export function AuthProvider({ children }) {
     init()
     return () => { cancelled = true }
   }, [])
-
-  function clearStorage() {
-    localStorage.removeItem(KEYS.ACCESS)
-    localStorage.removeItem(KEYS.REFRESH)
-    localStorage.removeItem(KEYS.USER)
-  }
 
   const login = useCallback(async ({ email, password }) => {
     setError(null)
@@ -146,9 +146,15 @@ export function AuthProvider({ children }) {
     if (token) {
       authService.logout(token).catch(() => {})
     }
-    clearStorage()
-    setUser(null)
-  }, [])
+    clearAuthState()
+  }, [clearAuthState])
+
+  /* ── Session-expired bridge from authFetch ── */
+  useEffect(() => {
+    const onExpired = () => clearAuthState()
+    window.addEventListener('archia:auth-expired', onExpired)
+    return () => window.removeEventListener('archia:auth-expired', onExpired)
+  }, [clearAuthState])
 
   const value = {
     user,
@@ -173,4 +179,8 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return ctx
+}
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }
