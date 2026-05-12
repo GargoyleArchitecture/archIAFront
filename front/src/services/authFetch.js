@@ -75,12 +75,7 @@ async function refreshAccessToken() {
 
   const refresh = getRefreshToken()
   if (!refresh) {
-    refreshInFlight = Promise.reject(new AuthExpiredError('No refresh token available'))
-    // Clear the slot synchronously so subsequent callers don't see a rejected promise.
-    refreshInFlight.catch(() => {})
-    const p = refreshInFlight
-    refreshInFlight = null
-    return p
+    throw new AuthExpiredError('No refresh token available')
   }
 
   refreshInFlight = authService

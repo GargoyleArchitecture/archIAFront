@@ -147,7 +147,7 @@ export function useChatManager({ projectId = null } = {}) {
         setSessionId(normalized[0].id)
       })
       .catch(() => {
-        /* En modo proyecto solo aceptamos chats persistentes en el API. */
+        /* En modo proyecto solo aceptamos chats persistidos en el API. */
         setSessions([])
         setSessionId(null)
         setMessages([])
