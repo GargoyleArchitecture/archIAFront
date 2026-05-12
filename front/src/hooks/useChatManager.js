@@ -27,6 +27,9 @@ import {
   fetchMessages,
   persistMessage,
 } from '../services/chatService'
+// F7-T1: modo activo e identidad del usuario para propagar al Backend IA.
+import { useMode } from '../contexts/ModeContext'
+import { useAuth } from './useAuth'
 
 /* ================================================================
    UTILIDADES PURAS (sin dependencias de React)
@@ -93,6 +96,10 @@ export function useChatManager({ projectId = null } = {}) {
   const [messages,      setMessages]      = useState([])
   const [ratedMessages, setRatedMessages] = useState(() => new Set())
   const [isLoading,     setIsLoading]     = useState(false)
+
+  // F7-T1: modo activo y user_id para propagar al Backend IA en cada turno.
+  const { mode }         = useMode()
+  const { user }         = useAuth()
 
   const requestSeq = useRef(0)
   const sessionIds = useMemo(
@@ -256,14 +263,16 @@ export function useChatManager({ projectId = null } = {}) {
         await persistMessage(sessionId, { content: textToSend, role: 'USER' })
       }
 
-      /* Llamar al Backend Inteligente */
+      /* Llamar al Backend Inteligente — F7-T1: incluye modo activo y user_id */
       const accessToken = localStorage.getItem('archia.accessToken') || ''
       const result = await aiSendMessage({
-        text: textToSend,
+        text:      textToSend,
         sessionId,
         images,
         projectId,
         accessToken,
+        mode:      mode   || 'professional',
+        userId:    user?.id,
       })
 
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
@@ -283,6 +292,8 @@ export function useChatManager({ projectId = null } = {}) {
               sessionId:        result.sessionId,
               messageId:        result.messageId,
               suggestions:      result.suggestions,
+              // F7-T1: sugerencia de cambio de modo del clasificador (F2-T4).
+              modeSuggestion:   result.modeSuggestion,
               createdAt:        Date.now(),
             }
           : m

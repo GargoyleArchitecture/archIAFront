@@ -40,16 +40,16 @@ function resolveUser(result) {
 
 const AuthContext = createContext(null)
 
+function clearStorage() {
+  localStorage.removeItem(KEYS.ACCESS)
+  localStorage.removeItem(KEYS.REFRESH)
+  localStorage.removeItem(KEYS.USER)
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser]           = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
-
-  function clearStorage() {
-    localStorage.removeItem(KEYS.ACCESS)
-    localStorage.removeItem(KEYS.REFRESH)
-    localStorage.removeItem(KEYS.USER)
-  }
 
   const clearAuthState = useCallback(() => {
     clearStorage()

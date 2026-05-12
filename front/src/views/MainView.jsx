@@ -18,6 +18,7 @@ import SettingsIcon          from '@mui/icons-material/Settings'
 import TuneIcon              from '@mui/icons-material/Tune'
 import CloseIcon             from '@mui/icons-material/Close'
 import ChevronRightIcon      from '@mui/icons-material/ChevronRight'
+import PersonOutlineIcon     from '@mui/icons-material/PersonOutline'
 
 import TextAtom         from '../components/atoms/TextAtom'
 import BoxAtom          from '../components/atoms/BoxAtom'
@@ -33,6 +34,8 @@ import ConfirmModal     from '../components/molecules/ConfirmModal'
 import Form             from '../components/molecules/Form'
 import InputForm        from '../components/molecules/InputForm'
 import MarkdownRenderer from '../components/organisms/MarkdownRenderer'
+import ChallengeBlock    from '../components/molecules/ChallengeBlock'
+import { useFeatures }    from '../contexts/FeaturesContext'
 
 /* ─────────────────────────────────────────────────────────────
    Constantes de dominio
@@ -159,6 +162,8 @@ export default function MainView() {
   const location  = useLocation()
   const { user: authUser, logout } = useAuth()
   const user = authUser || { name: 'User', email: 'user@example.com', id: null }
+  // F11-T5: gates de feature flags por tenant
+  const { features } = useFeatures()
 
   const { projects, load: loadProjects, getContext, saveContext } = useProjects()
   const { preference, load: loadPreference, save: savePreference } = useUserPreference(user?.id)
@@ -167,6 +172,10 @@ export default function MainView() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeProjectId, setActiveProjectId]       = useState(null)
   const [pendingChatId, setPendingChatId]           = useState(null)
+  /* F9-T1: reto activo proveniente de location.state.pendingRoutine
+     (entregado por WeaknessActionCard en F8-T4). Si presente, se monta
+     un ChallengeBlock arriba del ChatContainer sin alterar el chat base. */
+  const [activeRoutine, setActiveRoutine]           = useState(null)
   const messagesEndRef = useRef(null)
 
   /* ── Recent chats (sidebar) ── */
@@ -243,13 +252,22 @@ export default function MainView() {
     if (sessions.length > 0) loadRecentChats()
   }, [sessions, loadRecentChats])
 
-  /* ── Handle navigation state from ProjectDetailView ── */
+  /* ── Handle navigation state from ProjectDetailView + ProfileView ── */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const { chatId, projectId } = location.state || {}
+    const { chatId, projectId, pendingRoutine } = location.state || {}
+    let consumed = false
     if (chatId && projectId) {
       setPendingChatId(chatId)
       setActiveProjectId(projectId)
+      consumed = true
+    }
+    if (pendingRoutine && pendingRoutine.id) {
+      // F9-T1: capturar el reto entregado por F8-T4 (WeaknessActionCard).
+      setActiveRoutine(pendingRoutine)
+      consumed = true
+    }
+    if (consumed) {
       navigate('/', { replace: true, state: {} })
     }
   }, []) // intentionally on mount only
@@ -462,6 +480,33 @@ export default function MainView() {
           )}
         </div>
 
+        {/* ── My Profile nav link (F8-T1) — gated por F11-T5 ── */}
+        {features.enableProfileDashboard && (
+          <div className={isSidebarCollapsed ? 'pb-2 flex items-center justify-center flex-shrink-0' : 'px-3 pb-2 flex-shrink-0'}>
+            {!isSidebarCollapsed ? (
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="w-full px-3 py-2 flex items-center gap-2 rounded-md text-brand-200 hover:bg-brand-800 hover:text-brand-50 transition-colors"
+              >
+                <PersonOutlineIcon style={{ fontSize: 18 }} />
+                <span className="flex-1 text-left text-sm font-medium">My Profile</span>
+                <ChevronRightIcon style={{ fontSize: 16 }} className="text-brand-500" />
+              </button>
+            ) : (
+              <TooltipAtom content="My Profile" position="right">
+                <button
+                  type="button"
+                  onClick={() => navigate('/profile')}
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 transition-colors"
+                >
+                  <PersonOutlineIcon style={{ fontSize: 20 }} />
+                </button>
+              </TooltipAtom>
+            )}
+          </div>
+        )}
+
         {/* ── Divider ── */}
         {!isSidebarCollapsed && (
           <div className="mx-3 mb-1 border-t border-brand-800 flex-shrink-0" />
@@ -657,6 +702,16 @@ export default function MainView() {
           </div>
         )}
 
+        {/* ── F9-T1: ChallengeBlock activo (overlay arriba del chat) — gated por F11-T5 ── */}
+        {activeRoutine && features.enableRoutines && (
+          <div className="px-4 pt-3 pb-1 bg-gray-50 flex-shrink-0">
+            <ChallengeBlock
+              routine={activeRoutine}
+              onClose={() => setActiveRoutine(null)}
+            />
+          </div>
+        )}
+
         {/* ── Chat Content ── */}
         {activeProjectId ? (
           <ChatContainer className="flex-1">
@@ -679,6 +734,21 @@ export default function MainView() {
             )}
             <div ref={messagesEndRef} />
           </ChatContainer>
+        ) : activeRoutine && features.enableRoutines ? (
+          /* ── Reto activo sin proyecto seleccionado: muestra sólo el ChallengeBlock + hint ── */
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
+            <TextAtom variant="text-sm" className="text-gray-500 text-center max-w-md">
+              El reto se registró arriba. Cuando estés listo, abrí un proyecto para chatear con el agente sobre tu intento.
+            </TextAtom>
+            <ButtonAtom
+              intent="primary"
+              variant="text-icon"
+              icon={<FolderIcon />}
+              onClick={() => navigate('/projects')}
+            >
+              Abrir un proyecto
+            </ButtonAtom>
+          </div>
         ) : (
           /* ── Empty State ── */
           <div className="flex-1 flex flex-col items-center justify-center gap-4">

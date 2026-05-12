@@ -34,20 +34,34 @@ async function apiRequest(url, opts = {}) {
 ================================================================ */
 
 /**
- * @param {{ text: string, sessionId: string, images?: Array<{file: File}>, projectId?: string, accessToken?: string, onPartial?: (evt: object) => void }} params
+ * @param {{
+ *   text:        string,
+ *   sessionId:   string,
+ *   images?:     Array<{file: File}>,
+ *   projectId?:  string,
+ *   accessToken?: string,
+ *   onPartial?:  (evt: object) => void,
+ *   mode?:       'tutor' | 'professional',
+ *   userId?:     string,
+ * }} params
  * @returns {Promise<{
  *   text:             string,
  *   internalMessages: object[],
  *   sessionId:        string,
  *   messageId:        string | undefined,
  *   suggestions:      string[],
+ *   mode:             'tutor' | 'professional',
+ *   modeSuggestion:   'tutor' | 'professional' | null,
  * }>}
  */
-export async function sendMessage({ text, sessionId, images = [], projectId, accessToken, onPartial } = {}) {
+export async function sendMessage({ text, sessionId, images = [], projectId, accessToken, onPartial, mode, userId } = {}) {
   const form = new FormData()
   form.append('message',    text)
   form.append('session_id', sessionId)
   if (projectId) form.append('project_id', projectId)
+  // F7-T1: propaga el modo activo y el user_id al Backend IA (F2-T2).
+  form.append('mode', mode || 'professional')
+  if (userId) form.append('user_id', userId)
   images.forEach((img, i) => form.append(`image${i + 1}`, img.file))
 
   const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
@@ -100,6 +114,9 @@ export async function sendMessage({ text, sessionId, images = [], projectId, acc
     sessionId:        final?.session_id                          ?? sessionId,
     messageId:        final?.message_id,
     suggestions:      Array.isArray(final?.suggestions) ? final.suggestions : [],
+    // F7-T1: modo confirmado por el backend y sugerencia de cambio (F2-T4).
+    mode:             final?.mode            ?? 'professional',
+    modeSuggestion:   final?.mode_suggestion ?? null,
   }
 }
 

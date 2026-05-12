@@ -27,6 +27,10 @@ import ButtonAtom  from './components/atoms/ButtonAtom'
 import CheckboxAtom from './components/atoms/CheckboxAtom'
 import TooltipAtom from './components/atoms/TooltipAtom'
 import BoxAtom     from './components/atoms/BoxAtom'
+/* F10-T2: átomos especializados para el mapeo Agente → Atomic Design */
+import MonoTagAtom        from './components/atoms/MonoTagAtom'
+import ConceptPillAtom    from './components/atoms/ConceptPillAtom'
+import SeverityBadgeAtom  from './components/atoms/SeverityBadgeAtom'
 
 /* ================================================================
    NAV — lista de secciones para el sidebar
@@ -40,6 +44,10 @@ const NAV_ITEMS = [
   { id: 'checkbox-atom', label: 'CheckboxAtom' },
   { id: 'tooltip-atom',  label: 'TooltipAtom' },
   { id: 'box-atom',      label: 'BoxAtom' },
+  /* F10-T2 — átomos especializados */
+  { id: 'monotag-atom',        label: 'MonoTagAtom' },
+  { id: 'conceptpill-atom',    label: 'ConceptPillAtom' },
+  { id: 'severitybadge-atom',  label: 'SeverityBadgeAtom' },
 ]
 
 /* ================================================================
@@ -1075,6 +1083,127 @@ function BoxSection() {
 }
 
 /* ================================================================
+   F10-T2 SECCIÓN: MonoTagAtom
+================================================================ */
+function MonoTagAtomSection() {
+  return (
+    <ShowcaseSection
+      id="monotag-atom"
+      title="MonoTagAtom"
+      description="Etiqueta tipográfica monoespaciada para identificadores técnicos: nodos del grafo, nombres de herramientas, slugs."
+    >
+      <VariantGroup label="Tones">
+        {['neutral', 'brand', 'success', 'warning'].map((tone) => (
+          <ShowcaseItem key={tone} label={`tone="${tone}"`}>
+            <MonoTagAtom tone={tone}>{tone}</MonoTagAtom>
+          </ShowcaseItem>
+        ))}
+      </VariantGroup>
+
+      <VariantGroup label="Sizes">
+        <ShowcaseItem label='size="sm"'>
+          <MonoTagAtom size="sm">unifier</MonoTagAtom>
+        </ShowcaseItem>
+        <ShowcaseItem label='size="md"'>
+          <MonoTagAtom size="md">unifier</MonoTagAtom>
+        </ShowcaseItem>
+      </VariantGroup>
+
+      <VariantGroup label="Casos reales">
+        <ShowcaseItem label="Nodo del grafo">
+          <MonoTagAtom tone="brand">routine_generator</MonoTagAtom>
+        </ShowcaseItem>
+        <ShowcaseItem label="Estado HTTP">
+          <MonoTagAtom tone="success">200 OK</MonoTagAtom>
+        </ShowcaseItem>
+        <ShowcaseItem label="Warning">
+          <MonoTagAtom tone="warning">deprecated</MonoTagAtom>
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
+   F10-T2 SECCIÓN: ConceptPillAtom
+================================================================ */
+function ConceptPillAtomSection() {
+  const [selected, setSelected] = useState(null)
+  return (
+    <ShowcaseSection
+      id="conceptpill-atom"
+      title="ConceptPillAtom"
+      description="Pill semántico para conceptos arquitectónicos. Tipografía sans, color por intent. Interactivo si recibe onClick."
+    >
+      <VariantGroup label="Intents">
+        {['neutral', 'primary', 'success', 'warning', 'danger'].map((intent) => (
+          <ShowcaseItem key={intent} label={`intent="${intent}"`}>
+            <ConceptPillAtom intent={intent}>{intent}</ConceptPillAtom>
+          </ShowcaseItem>
+        ))}
+      </VariantGroup>
+
+      <VariantGroup label="Sizes">
+        {['sm', 'md', 'lg'].map((s) => (
+          <ShowcaseItem key={s} label={`size="${s}"`}>
+            <ConceptPillAtom size={s}>SOLID</ConceptPillAtom>
+          </ShowcaseItem>
+        ))}
+      </VariantGroup>
+
+      <VariantGroup label="Interactivo (filtro)">
+        <ShowcaseItem label='onClick + selected'>
+          <BoxAtom display="flex" gap="2" wrap="wrap">
+            {['SOLID', 'Caching', 'CQRS', 'Microservices'].map((name) => (
+              <ConceptPillAtom
+                key={name}
+                intent={selected === name ? 'primary' : 'neutral'}
+                selected={selected === name}
+                onClick={() => setSelected(selected === name ? null : name)}
+              >
+                {name}
+              </ConceptPillAtom>
+            ))}
+          </BoxAtom>
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
+   F10-T2 / F8-T4 SECCIÓN: SeverityBadgeAtom
+   (entregado originalmente en F8-T4; documentado aquí porque pertenece
+   también al catálogo F10-T2 de átomos especializados.)
+================================================================ */
+function SeverityBadgeAtomSection() {
+  return (
+    <ShowcaseSection
+      id="severitybadge-atom"
+      title="SeverityBadgeAtom"
+      description="Badge de severidad con tres niveles semánticos: Alta (rojo), Media (amarillo), Baja (verde). Incluye fallback 'unknown' (gris)."
+    >
+      <VariantGroup label="Niveles">
+        {['high', 'medium', 'low', 'unknown'].map((level) => (
+          <ShowcaseItem key={level} label={`level="${level}"`}>
+            <SeverityBadgeAtom level={level} />
+          </ShowcaseItem>
+        ))}
+      </VariantGroup>
+
+      <VariantGroup label="Sizes">
+        <ShowcaseItem label='size="sm"'>
+          <SeverityBadgeAtom level="high" size="sm" />
+        </ShowcaseItem>
+        <ShowcaseItem label='size="md"'>
+          <SeverityBadgeAtom level="high" size="md" />
+        </ShowcaseItem>
+      </VariantGroup>
+    </ShowcaseSection>
+  )
+}
+
+/* ================================================================
    COMPONENTE PRINCIPAL: AtomShowcase
 ================================================================ */
 export default function AtomShowcase({ onNavigate }) {
@@ -1182,6 +1311,10 @@ export default function AtomShowcase({ onNavigate }) {
           <CheckboxAtomSection />
           <TooltipAtomSection />
           <BoxSection />
+          {/* F10-T2 — átomos especializados */}
+          <MonoTagAtomSection />
+          <ConceptPillAtomSection />
+          <SeverityBadgeAtomSection />
 
           {/* Footer */}
           <footer className="border-t border-gray-200 pt-6 pb-10 text-center">

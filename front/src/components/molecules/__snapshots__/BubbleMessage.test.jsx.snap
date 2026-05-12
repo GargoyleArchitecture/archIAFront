@@ -1,0 +1,92 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BubbleMessage — theming F6-T3 / F6-T4 > renderiza variant=ai con isLoading=true (typing dots) 1`] = `
+<div
+  class="flex flex-col gap-1 w-full"
+>
+  <div
+    class="flex items-end justify-start gap-2 w-full"
+  >
+    <div
+      class="theme-transition shadow-xs rounded-lg rounded-bl-sm"
+      data-variant="ai"
+      style="background-color: var(--mode-bubble-bg-ai); color: var(--mode-on-surface); padding: var(--mode-bubble-padding); max-width: var(--mode-bubble-max-width); border: 1px solid var(--mode-bubble-border-ai);"
+    >
+      <div
+        aria-label="Generando respuesta"
+        aria-live="polite"
+        class="flex flex-col"
+        role="status"
+      >
+        <div
+          class="flex flex-col gap-2 py-1"
+          data-testid="response-skeleton-tutor"
+        >
+          <span
+            aria-hidden="true"
+            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
+            role="presentation"
+            style="width: 85%; height: 12px;"
+          />
+          <span
+            aria-hidden="true"
+            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
+            role="presentation"
+            style="width: 60%; height: 12px;"
+          />
+          <span
+            aria-hidden="true"
+            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
+            role="presentation"
+            style="width: 40%; height: 12px;"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`BubbleMessage — theming F6-T3 / F6-T4 > renderiza variant=user con data-mode=professional (snapshot) 1`] = `
+<div
+  class="flex flex-col gap-1 w-full"
+>
+  <div
+    class="flex items-end justify-end gap-2 w-full"
+  >
+    <div
+      class="theme-transition shadow-xs rounded-lg rounded-br-sm"
+      data-variant="user"
+      style="background-color: var(--mode-bubble-bg-user); color: var(--mode-on-surface); padding: var(--mode-bubble-padding); max-width: var(--mode-bubble-max-width);"
+    >
+      <div
+        style="font-family: var(--mode-font-body); line-height: var(--mode-leading-body); font-size: var(--mode-text-body);"
+      >
+        Hello professional
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`BubbleMessage — theming F6-T3 / F6-T4 > renderiza variant=user con data-mode=tutor (snapshot) 1`] = `
+<div
+  class="flex flex-col gap-1 w-full"
+>
+  <div
+    class="flex items-end justify-end gap-2 w-full"
+  >
+    <div
+      class="theme-transition shadow-xs rounded-lg rounded-br-sm"
+      data-variant="user"
+      style="background-color: var(--mode-bubble-bg-user); color: var(--mode-on-surface); padding: var(--mode-bubble-padding); max-width: var(--mode-bubble-max-width);"
+    >
+      <div
+        style="font-family: var(--mode-font-body); line-height: var(--mode-leading-body); font-size: var(--mode-text-body);"
+      >
+        Hello tutor
+      </div>
+    </div>
+  </div>
+</div>
+`;
