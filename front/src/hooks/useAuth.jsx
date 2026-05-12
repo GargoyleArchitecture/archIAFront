@@ -150,6 +150,16 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  /* ── Session-expired bridge from authFetch ── */
+  useEffect(() => {
+    function onExpired() {
+      clearStorage()
+      setUser(null)
+    }
+    window.addEventListener('archia:auth-expired', onExpired)
+    return () => window.removeEventListener('archia:auth-expired', onExpired)
+  }, [])
+
   const value = {
     user,
     isLoading,
