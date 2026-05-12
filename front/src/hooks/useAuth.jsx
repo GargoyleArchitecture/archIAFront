@@ -119,12 +119,6 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    const handleAuthExpired = () => clearAuthState()
-    window.addEventListener('archia-auth-expired', handleAuthExpired)
-    return () => window.removeEventListener('archia-auth-expired', handleAuthExpired)
-  }, [clearAuthState])
-
   const login = useCallback(async ({ email, password }) => {
     setError(null)
     const result = await authService.login({ email, password })
@@ -157,13 +151,10 @@ export function AuthProvider({ children }) {
 
   /* ── Session-expired bridge from authFetch ── */
   useEffect(() => {
-    function onExpired() {
-      clearStorage()
-      setUser(null)
-    }
+    const onExpired = () => clearAuthState()
     window.addEventListener('archia:auth-expired', onExpired)
     return () => window.removeEventListener('archia:auth-expired', onExpired)
-  }, [])
+  }, [clearAuthState])
 
   const value = {
     user,

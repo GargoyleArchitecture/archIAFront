@@ -95,9 +95,13 @@ export function useChatManager({ projectId = null } = {}) {
   const [isLoading,     setIsLoading]     = useState(false)
 
   const requestSeq = useRef(0)
-  const hasSession = useCallback(
-    (id) => sessions.some((s) => s.id === id),
+  const sessionIds = useMemo(
+    () => new Set(sessions.map((s) => s.id)),
     [sessions]
+  )
+  const hasSession = useCallback(
+    (id) => sessionIds.has(id),
+    [sessionIds]
   )
 
   /* isBusy: true mientras haya un mensaje con pending=true */
