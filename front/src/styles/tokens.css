@@ -282,6 +282,9 @@
 
   /* Code block header */
   --mode-code-header-bg:       var(--color-gray-800);
+
+  /* Skeleton — altura mínima de la burbuja AI durante isLoading (contenido + padding×2) */
+  --mode-skeleton-min-h:       6.75rem;
 }
 
 [data-mode="professional"] {
@@ -341,6 +344,9 @@
 
   /* Code block header */
   --mode-code-header-bg:       var(--color-gray-800);
+
+  /* Skeleton — altura mínima de la burbuja AI durante isLoading (contenido + padding×2) */
+  --mode-skeleton-min-h:       8.25rem;
 }
 
 /* ============================================================
@@ -358,5 +364,6 @@
     color            200ms ease,
     border-color     200ms ease,
     padding          200ms ease,
-    box-shadow       200ms ease;
+    box-shadow       200ms ease,
+    min-height       200ms ease;
 }

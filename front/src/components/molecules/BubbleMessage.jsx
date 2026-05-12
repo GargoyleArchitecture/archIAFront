@@ -130,7 +130,10 @@ export default function BubbleMessage({
         <div
           data-variant={variant}
           className={['theme-transition shadow-xs', BUBBLE_RADIUS[variant]].join(' ')}
-          style={bubbleStyle(variant)}
+          style={{
+            ...bubbleStyle(variant),
+            minHeight: isLoading ? 'var(--mode-skeleton-min-h)' : undefined,
+          }}
         >
           {isLoading ? (
             /* F9-T2: skeleton semántico por modo reemplaza TypingDots genéricos.

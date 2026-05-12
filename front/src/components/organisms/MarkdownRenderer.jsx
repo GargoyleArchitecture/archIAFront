@@ -24,6 +24,7 @@
  *   className — string   Clases adicionales para el contenedor raíz
  */
 
+import { useMemo }   from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm     from 'remark-gfm'
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
@@ -421,7 +422,7 @@ function buildComponents(mode) {
 ================================================================ */
 export default function MarkdownRenderer({ content = '', className = '' }) {
   const { mode } = useMode()
-  const MD = buildComponents(mode)
+  const MD = useMemo(() => buildComponents(mode), [mode])
   return (
     <BoxAtom className={['leading-relaxed', className].filter(Boolean).join(' ')}>
       <ReactMarkdown
