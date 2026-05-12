@@ -9,47 +9,21 @@
  * y retorna los datos ya formateados — sin lógica de estado ni referencias a React.
  */
 
+import { authFetch, authJson } from './authFetch'
+
 const AI_BASE = import.meta.env.VITE_AI_BASE || 'http://localhost:8000'
 
 const API_BASE = import.meta.env.VITE_API_BASE
   ? `${import.meta.env.VITE_API_BASE}/api/v1`
   : '/api/v1'
 
-function getToken() {
-  return localStorage.getItem('archia.accessToken') || ''
-}
-
-function notifyAuthExpired() {
-  localStorage.removeItem('archia.accessToken')
-  localStorage.removeItem('archia.refreshToken')
-  localStorage.removeItem('archia.user')
-  window.dispatchEvent(new Event('archia-auth-expired'))
-}
-
 /* ================================================================
-   Helper para llamadas al Backend API (JSON, con Bearer token)
+   Helper para llamadas al Backend API (JSON, con Bearer token y
+   refresh transparente en 401 vía authFetch).
 ================================================================ */
 
-async function apiRequest(url, { headers = {}, ...rest } = {}) {
-  const token = getToken()
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    ...rest,
-  })
-  const json = res.headers.get('content-type')?.includes('application/json')
-    ? await res.json()
-    : null
-  if (res.status === 401) {
-    notifyAuthExpired()
-  }
-  if (!res.ok) {
-    throw new Error(json?.message || `HTTP ${res.status}`)
-  }
-  return json?.data ?? json
+async function apiRequest(url, opts = {}) {
+  return authJson(url, opts)
 }
 
 /* ================================================================
@@ -76,10 +50,9 @@ export async function sendMessage({ text, sessionId, images = [], projectId, acc
   if (projectId) form.append('project_id', projectId)
   images.forEach((img, i) => form.append(`image${i + 1}`, img.file))
 
-  const token = accessToken || getToken()
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
 
-  const resp = await fetch(`${AI_BASE}/message`, { method: 'POST', body: form, headers })
+  const resp = await authFetch(`${AI_BASE}/message`, { method: 'POST', body: form, headers })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
   if (!resp.body) throw new Error('Response body is not a readable stream')
 
@@ -150,7 +123,7 @@ export function buildDiagramExportUrl({ sessionId, format = 'svg' }) {
  */
 export async function fetchDiagramSvg({ sessionId }) {
   const url = buildDiagramExportUrl({ sessionId, format: 'svg' })
-  const resp = await fetch(url)
+  const resp = await authFetch(url)
   const rawText = await resp.text()
 
   if (!resp.ok) {
@@ -187,7 +160,7 @@ export async function sendFeedback({ sessionId, messageId, thumbsUp, thumbsDown 
   form.append('thumbs_up',   thumbsUp)
   form.append('thumbs_down', thumbsDown)
 
-  await fetch(`${AI_BASE}/feedback`, { method: 'POST', body: form })
+  await authFetch(`${AI_BASE}/feedback`, { method: 'POST', body: form, skipAuth: true })
 }
 
 /* ================================================================

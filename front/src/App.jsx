@@ -8,10 +8,12 @@ import ProjectDetailView from './views/ProjectDetailView'
 import AtomShowcase      from './AtomShowcase'
 import MoleculeShowcase  from './MoleculeShowcase'
 import ChatView          from './views/ChatView'
+import ToastListener     from './components/atoms/ToastListener'
 
 function App() {
   return (
     <AuthProvider>
+      <ToastListener />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginView />} />
