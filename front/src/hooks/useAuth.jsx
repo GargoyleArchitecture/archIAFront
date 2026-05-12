@@ -191,5 +191,5 @@ export function useAuth() {
 }
 
 AuthProvider.propTypes = {
-  children: PropTypes.node,
+  children: PropTypes.node.isRequired,
 }

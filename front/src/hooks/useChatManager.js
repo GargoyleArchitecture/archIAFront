@@ -95,7 +95,7 @@ export function useChatManager({ projectId = null } = {}) {
   const [isLoading,     setIsLoading]     = useState(false)
 
   const requestSeq = useRef(0)
-  const hasRemoteSession = useCallback(
+  const hasSession = useCallback(
     (id) => sessions.some((s) => s.id === id),
     [sessions]
   )
@@ -147,7 +147,7 @@ export function useChatManager({ projectId = null } = {}) {
   /* ── Carga mensajes al cambiar de sesión (solo en modo API) ── */
   useEffect(() => {
     if (!sessionId || !projectId) return
-    if (!hasRemoteSession(sessionId)) {
+    if (!hasSession(sessionId)) {
       setMessages([])
       return
     }
@@ -156,7 +156,7 @@ export function useChatManager({ projectId = null } = {}) {
       .then(setMessages)
       .catch(() => setMessages([]))
       .finally(() => setIsLoading(false))
-  }, [sessionId, projectId, hasRemoteSession])
+  }, [sessionId, projectId, hasSession])
 
   /* ================================================================
      OPERACIONES SOBRE SESIONES
@@ -192,7 +192,7 @@ export function useChatManager({ projectId = null } = {}) {
 
   const renameSession = (id, title) => {
     setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title } : s)))
-    if (projectId && hasRemoteSession(id)) {
+    if (projectId && hasSession(id)) {
       updateChat(id, { title }).catch(() => {})
     }
   }
@@ -203,7 +203,7 @@ export function useChatManager({ projectId = null } = {}) {
     const remaining = sessions.filter((s) => s.id !== id)
     setSessions(remaining)
 
-    if (projectId && hasRemoteSession(id)) {
+    if (projectId && hasSession(id)) {
       deleteChat(id).catch(() => {})
     }
 
@@ -247,7 +247,7 @@ export function useChatManager({ projectId = null } = {}) {
 
     try {
       /* Persistir mensaje del usuario en el Backend API */
-      if (projectId && hasRemoteSession(sessionId)) {
+      if (projectId && hasSession(sessionId)) {
         await persistMessage(sessionId, { content: textToSend, role: 'USER' })
       }
 
@@ -264,7 +264,7 @@ export function useChatManager({ projectId = null } = {}) {
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
 
       /* Persistir respuesta del asistente en el Backend API */
-      if (projectId && hasRemoteSession(sessionId)) {
+      if (projectId && hasSession(sessionId)) {
         await persistMessage(sessionId, { content: result.text, role: 'AI' })
       }
 
