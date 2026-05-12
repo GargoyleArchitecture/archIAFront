@@ -204,10 +204,11 @@ export function useChatManager({ projectId = null } = {}) {
   const deleteSession = (id) => {
     if (isBusy) return
 
+    const exists = hasSession(id)
     const remaining = sessions.filter((s) => s.id !== id)
     setSessions(remaining)
 
-    if (projectId && hasSession(id)) {
+    if (projectId && exists) {
       deleteChat(id).catch(() => {})
     }
 
