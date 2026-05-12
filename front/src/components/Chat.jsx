@@ -522,9 +522,9 @@ export default function Chat() {
                     </Box>
                   )}
 
-                  {msg.images?.length > 0 && (
+                  {(msg.images?.filter((src) => typeof src === "string" && src.trim().length > 0) ?? []).length > 0 && (
                     <Box className="image-container" sx={{ mt: 1 }}>
-                      {msg.images.map((src, i) => (
+                      {msg.images.filter((src) => typeof src === "string" && src.trim().length > 0).map((src, i) => (
                         <Box key={`${msg.id}-img-${i}`} component="img" src={src} className="message-image" alt={`img-${i}`} />
                       ))}
                     </Box>
