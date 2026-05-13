@@ -26,25 +26,44 @@
 
 import BoxAtom  from '../atoms/BoxAtom'
 import TextAtom from '../atoms/TextAtom'
-import ResponseSkeleton from './ResponseSkeleton'
-import { useMode } from '../../contexts/ModeContext'
 
 /* ----------------------------------------------------------------
-   Indicador de escritura animado (uso interno)
+   Indicador "el agente está procesando" — dots en color de modo +
+   etiqueta textual. Reemplaza el skeleton sutil anterior porque
+   resultaba indistinguible de un bloque vacío.
 ---------------------------------------------------------------- */
-function TypingDots() {
+function TypingIndicator() {
   return (
-    <BoxAtom display="flex" align="center" gap="1" py="1">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full animate-bounce"
-          style={{
-            backgroundColor: 'var(--mode-text-secondary)',
-            animationDelay: `${i * 150}ms`,
-          }}
-        />
-      ))}
+    <BoxAtom
+      display="flex"
+      align="center"
+      gap="3"
+      py="1"
+      role="status"
+      aria-live="polite"
+      aria-label="El agente está generando una respuesta"
+    >
+      <BoxAtom display="flex" align="center" gap="1">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-2 h-2 rounded-full animate-bounce motion-reduce:animate-none"
+            style={{
+              backgroundColor: 'var(--mode-primary)',
+              animationDelay: `${i * 150}ms`,
+            }}
+          />
+        ))}
+      </BoxAtom>
+      <span
+        className="text-sm"
+        style={{
+          color: 'var(--mode-text-secondary)',
+          fontFamily: 'var(--mode-font-body)',
+        }}
+      >
+        Generando respuesta…
+      </span>
     </BoxAtom>
   )
 }
@@ -104,8 +123,6 @@ export default function BubbleMessage({
   className  = '',
   ...props
 }) {
-  // F9-T2: lectura del modo actual para variar el skeleton durante isLoading.
-  const { mode } = useMode()
   return (
     <BoxAtom
       display="flex"
@@ -133,10 +150,7 @@ export default function BubbleMessage({
           style={bubbleStyle(variant)}
         >
           {isLoading ? (
-            /* F9-T2: skeleton semántico por modo reemplaza TypingDots genéricos.
-               TypingDots queda disponible más arriba en este módulo como
-               fallback histórico, pero no se renderiza por defecto. */
-            <ResponseSkeleton mode={mode} />
+            <TypingIndicator />
           ) : noTextWrap ? (
             children
           ) : (

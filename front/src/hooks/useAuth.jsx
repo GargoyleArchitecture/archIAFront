@@ -1,11 +1,11 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import * as authService from '../services/authService'
-
-const KEYS = {
-  ACCESS:  'archia.accessToken',
-  REFRESH: 'archia.refreshToken',
-  USER:    'archia.user',
-}
+import {
+  STORAGE_KEYS as KEYS,
+  AUTH_EXPIRED_EVENT,
+  getAccessToken,
+  clearTokens,
+} from '../services/http'
 
 function parseJwtPayload(token) {
   try {
@@ -32,8 +32,8 @@ function userFromToken(token) {
 }
 
 function resolveUser(result) {
-  if (result.user) return result.user
-  if (result.accessToken) return userFromToken(result.accessToken)
+  if (result?.user) return result.user
+  if (result?.accessToken) return userFromToken(result.accessToken)
   return null
 }
 
@@ -44,66 +44,31 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
 
-  /* ── Initialization: verify stored token on mount ── */
+  /* ── Initialization: verify stored token on mount ──
+     authorizedFetch (vía apiRequest en getMe) maneja internamente el caso
+     401 → refresh → retry, así que aquí solo necesitamos un try/catch. */
   useEffect(() => {
     let cancelled = false
 
     async function init() {
-      const storedAccess  = localStorage.getItem(KEYS.ACCESS)
-      const storedRefresh = localStorage.getItem(KEYS.REFRESH)
-      const storedUser    = localStorage.getItem(KEYS.USER)
-
+      const storedAccess = getAccessToken()
       if (!storedAccess) {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
         return
       }
 
       try {
-        const me = await authService.getMe(storedAccess)
-        if (!cancelled) {
-          const resolved = me?.id ? me : (me?.user ?? userFromToken(storedAccess))
-          setUser(resolved)
-          localStorage.setItem(KEYS.USER, JSON.stringify(resolved))
+        const me = await authService.getMe()
+        if (cancelled) return
+        const resolved = me?.id ? me : (me?.user ?? userFromToken(getAccessToken() || storedAccess))
+        setUser(resolved)
+        if (resolved) {
+          try { localStorage.setItem(KEYS.USER, JSON.stringify(resolved)) } catch { /* noop */ }
         }
       } catch {
-        if (storedRefresh) {
-          try {
-            const refreshResult = await authService.refreshToken(storedRefresh)
-            const newAccess = refreshResult.accessToken
-            localStorage.setItem(KEYS.ACCESS, newAccess)
-
-            try {
-              const me = await authService.getMe(newAccess)
-              const resolved = me?.id ? me : (me?.user ?? userFromToken(newAccess))
-              if (!cancelled) {
-                setUser(resolved)
-                localStorage.setItem(KEYS.USER, JSON.stringify(resolved))
-              }
-            } catch {
-              const fromToken = userFromToken(newAccess)
-              if (!cancelled && fromToken) {
-                setUser(fromToken)
-                localStorage.setItem(KEYS.USER, JSON.stringify(fromToken))
-              } else {
-                clearStorage()
-                if (!cancelled) setUser(null)
-              }
-            }
-          } catch {
-            clearStorage()
-            if (!cancelled) setUser(null)
-          }
-        } else if (storedUser) {
-          try {
-            if (!cancelled) setUser(JSON.parse(storedUser))
-          } catch {
-            clearStorage()
-            if (!cancelled) setUser(null)
-          }
-        } else {
-          clearStorage()
-          if (!cancelled) setUser(null)
-        }
+        if (cancelled) return
+        clearTokens()
+        setUser(null)
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -113,41 +78,58 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  function clearStorage() {
-    localStorage.removeItem(KEYS.ACCESS)
-    localStorage.removeItem(KEYS.REFRESH)
-    localStorage.removeItem(KEYS.USER)
-  }
+  /* ── Auto-logout cuando el refresh falla a mitad de sesión ──
+     `http.js` dispara `archia:auth:expired` cuando refreshAccessToken()
+     no puede renovar (token rotado/expirado/revocado). */
+  useEffect(() => {
+    function handleExpired() {
+      clearTokens()
+      setUser(null)
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpired)
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpired)
+  }, [])
 
   const login = useCallback(async ({ email, password }) => {
     setError(null)
     const result = await authService.login({ email, password })
-    localStorage.setItem(KEYS.ACCESS, result.accessToken)
-    localStorage.setItem(KEYS.REFRESH, result.refreshToken)
-
     const me = resolveUser(result)
     setUser(me)
-    localStorage.setItem(KEYS.USER, JSON.stringify(me))
+    if (me) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
+    }
   }, [])
 
   const register = useCallback(async ({ name, email, password, tenantName }) => {
     setError(null)
     const result = await authService.register({ name, email, password, tenantName })
-    localStorage.setItem(KEYS.ACCESS, result.accessToken)
-    localStorage.setItem(KEYS.REFRESH, result.refreshToken)
-
     const me = resolveUser(result)
     setUser(me)
-    localStorage.setItem(KEYS.USER, JSON.stringify(me))
+    if (me) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
+    }
   }, [])
 
   const logout = useCallback(async () => {
-    const token = localStorage.getItem(KEYS.ACCESS)
-    if (token) {
-      authService.logout(token).catch(() => {})
-    }
-    clearStorage()
+    try { await authService.logout() } catch { /* noop */ }
     setUser(null)
+  }, [])
+
+  /**
+   * Refetch /auth/me y actualiza el user state (incluye `tenant` cargado).
+   * Útil después de login (donde el user inicial viene del JWT decode y no
+   * incluye relaciones) o cuando se necesita info fresca del backend.
+   */
+  const refreshUser = useCallback(async () => {
+    try {
+      const me = await authService.getMe()
+      if (me?.id) {
+        setUser(me)
+        try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
+        return me
+      }
+    } catch { /* el caller decide qué hacer si falla */ }
+    return null
   }, [])
 
   const value = {
@@ -158,6 +140,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshUser,
   }
 
   return (

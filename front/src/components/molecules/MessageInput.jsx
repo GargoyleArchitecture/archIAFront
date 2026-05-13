@@ -27,6 +27,7 @@ export default function MessageInput({
   disabled       = false,
   maxRows        = 6,
   leadingAction  = null,
+  footerSlot     = null,
   className      = '',
   ...props
 }) {
@@ -80,9 +81,11 @@ export default function MessageInput({
 
       {/* F6-T3 / F6-T4: contenedor del input con tokens --mode-input-*.
           Focus ring se aplica vía onFocusCapture/onBlurCapture (color
-          consistente con el modo activo, sin depender de Tailwind). */}
+          consistente con el modo activo, sin depender de Tailwind).
+          Padding vertical mínimo (py-1.5) para que la altura del
+          contenedor sea la del textarea + icono — sin "aire" extra. */}
       <div
-        className="theme-transition flex items-end gap-2 rounded-lg px-3 py-2 shadow-xs"
+        className="theme-transition flex items-center gap-2 rounded-lg px-3 py-1.5 shadow-xs"
         style={{
           backgroundColor: 'var(--mode-input-bg)',
           border: '1px solid var(--mode-input-border)',
@@ -123,40 +126,44 @@ export default function MessageInput({
             'flex-1 resize-none outline-none bg-transparent',
             'placeholder:text-gray-400',
             'disabled:text-gray-400',
-            'overflow-y-auto py-0.5',
+            'overflow-y-auto',
           ].join(' ')}
         />
 
-        {/* Botón de envío */}
-        <ButtonAtom
-          variant="icon"
-          intent="primary"
-          size="xs"
+        {/* Botón de envío — icono dimensionado al body type del modo activo
+            para que el contenedor no crezca por encima de la línea del texto. */}
+        <button
+          type="button"
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Enviar mensaje"
-          className="flex-shrink-0 self-end"
+          className={[
+            'flex-shrink-0 self-end inline-flex items-center justify-center',
+            'rounded-md p-1 transition-colors',
+            canSend ? 'hover:bg-black/5' : 'opacity-40 cursor-not-allowed',
+          ].join(' ')}
+          style={{
+            color: canSend ? 'var(--mode-primary)' : 'var(--mode-text-secondary)',
+          }}
         >
-          <SendIcon />
-        </ButtonAtom>
+          <SendIcon
+            style={{
+              fontSize: 'var(--mode-text-body)',
+              lineHeight: 1,
+            }}
+          />
+        </button>
       </div>
 
-      {/* Hint — usa el color secundario del modo activo */}
-      {hint ? (
+      {/* Footer: slot custom o hint por defecto.
+          `footerSlot` toma precedencia sobre `hint` cuando se provee. */}
+      {footerSlot ?? (
         <TextAtom
           variant="text-xs"
           className="px-1"
           style={{ color: 'var(--mode-text-secondary)' }}
         >
-          {hint}
-        </TextAtom>
-      ) : (
-        <TextAtom
-          variant="text-xs"
-          className="px-1"
-          style={{ color: 'var(--mode-text-secondary)' }}
-        >
-          Enter para enviar · Shift+Enter nueva línea
+          {hint || 'Enter para enviar · Shift+Enter nueva línea'}
         </TextAtom>
       )}
     </BoxAtom>

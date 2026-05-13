@@ -9,36 +9,14 @@
  * y retorna los datos ya formateados — sin lógica de estado ni referencias a React.
  */
 
+import { API_BASE, apiRequest, getAccessToken } from './http'
+
 const AI_BASE = import.meta.env.VITE_AI_BASE || 'http://localhost:8000'
 
-const API_BASE = import.meta.env.VITE_API_BASE
-  ? `${import.meta.env.VITE_API_BASE}/api/v1`
-  : '/api/v1'
-
+// Backend IA (FastAPI) usa otro dominio y no comparte refresh con Negocio —
+// se mantiene el helper local para los endpoints de streaming/feedback.
 function getToken() {
-  return localStorage.getItem('archia.accessToken') || ''
-}
-
-/* ================================================================
-   Helper para llamadas al Backend API (JSON, con Bearer token)
-================================================================ */
-
-async function apiRequest(url, { headers = {}, ...rest } = {}) {
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-      ...headers,
-    },
-    ...rest,
-  })
-  const json = res.headers.get('content-type')?.includes('application/json')
-    ? await res.json()
-    : null
-  if (!res.ok) {
-    throw new Error(json?.message || `HTTP ${res.status}`)
-  }
-  return json?.data ?? json
+  return getAccessToken()
 }
 
 /* ================================================================

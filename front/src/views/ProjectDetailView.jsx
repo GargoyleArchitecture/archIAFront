@@ -198,7 +198,7 @@ export default function ProjectDetailView() {
      RENDER
   ════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-y-auto">
 
       {/* ── Page header ── */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">

@@ -29,12 +29,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import RefreshIcon          from '@mui/icons-material/Refresh'
 import PlayArrowIcon        from '@mui/icons-material/PlayArrow'
-import HourglassEmptyIcon   from '@mui/icons-material/HourglassEmpty'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 
 import ButtonAtom        from '../atoms/ButtonAtom'
 import TextAtom          from '../atoms/TextAtom'
 import SeverityBadgeAtom, { severityFromMastery } from '../atoms/SeverityBadgeAtom'
+import SpinnerAtom       from '../atoms/SpinnerAtom'
 
 import { generateRoutine } from '../../services/profileService'
 import { humanizeDelta }   from '../../utils/profileHydration'
@@ -188,7 +188,11 @@ export default function WeaknessActionCard({
             variant="text-icon"
             intent="primary"
             size="sm"
-            icon={status === 'loading' ? <HourglassEmptyIcon /> : <PlayArrowIcon />}
+            icon={
+              status === 'loading'
+                ? <SpinnerAtom size="sm" intent="on-dark" label="Generando reto" />
+                : <PlayArrowIcon />
+            }
             onClick={handleGenerate}
             disabled={!canGenerate || status === 'loading' || status === 'success'}
           >

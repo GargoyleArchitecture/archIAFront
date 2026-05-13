@@ -9,9 +9,7 @@
  *   - El caller (FeaturesContext) cachea el resultado por sesión.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE
-  ? `${import.meta.env.VITE_API_BASE}/api/v1`
-  : '/api/v1'
+import { API_BASE, apiRequest, getAccessToken } from './http'
 
 export const DEFAULT_FEATURES = Object.freeze({
   enableTutorMode: true,
@@ -19,35 +17,19 @@ export const DEFAULT_FEATURES = Object.freeze({
   enableRoutines: true,
 })
 
-function getToken() {
-  try {
-    return localStorage.getItem('archia.accessToken') || ''
-  } catch {
-    return ''
-  }
-}
-
 /**
  * Obtiene las features del tenant del usuario autenticado.
  * Nunca lanza al caller — fallbacks al set optimista en cualquier error.
+ * Se beneficia del retry-on-401 automático de `apiRequest`.
  *
  * @returns {Promise<{enableTutorMode: boolean, enableProfileDashboard: boolean, enableRoutines: boolean}>}
  */
 export async function getMyFeatures() {
-  const token = getToken()
-  if (!token) {
+  if (!getAccessToken()) {
     return { ...DEFAULT_FEATURES }
   }
   try {
-    const res = await fetch(`${API_BASE}/tenants/me/features`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    if (!res.ok) return { ...DEFAULT_FEATURES }
-    const json = await res.json()
-    const data = json?.data ?? json
+    const data = await apiRequest(`${API_BASE}/tenants/me/features`)
     return {
       enableTutorMode:        data?.enableTutorMode        !== false,
       enableProfileDashboard: data?.enableProfileDashboard !== false,

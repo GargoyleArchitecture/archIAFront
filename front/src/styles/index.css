@@ -233,3 +233,16 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ============================================================
+   App shell — el documento NO scrollea: todos los scrolls viven
+   dentro de containers internos (sidebar nav, panel main, modals).
+   Esto evita el doble-scrollbar y los "cortes" del layout cuando
+   un panel con overflow-y-auto crece más de 100vh.
+   ============================================================ */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}

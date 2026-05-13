@@ -16,31 +16,7 @@
  *   - Errores como Error con mensaje legible
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE
-  ? `${import.meta.env.VITE_API_BASE}/api/v1`
-  : '/api/v1'
-
-function getToken() {
-  return localStorage.getItem('archia.accessToken') || ''
-}
-
-async function request(url, { headers = {}, ...rest } = {}) {
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-      ...headers,
-    },
-    ...rest,
-  })
-  const json = res.headers.get('content-type')?.includes('application/json')
-    ? await res.json()
-    : null
-  if (!res.ok) {
-    throw new Error(json?.message || `HTTP ${res.status}`)
-  }
-  return json?.data ?? json
-}
+import { API_BASE, apiRequest as request } from './http'
 
 /* ================================================================
    PERFIL TÉCNICO

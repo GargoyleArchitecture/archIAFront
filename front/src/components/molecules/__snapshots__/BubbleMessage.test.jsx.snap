@@ -13,34 +13,33 @@ exports[`BubbleMessage — theming F6-T3 / F6-T4 > renderiza variant=ai con isLo
       style="background-color: var(--mode-bubble-bg-ai); color: var(--mode-on-surface); padding: var(--mode-bubble-padding); max-width: var(--mode-bubble-max-width); border: 1px solid var(--mode-bubble-border-ai);"
     >
       <div
-        aria-label="Generando respuesta"
+        aria-label="El agente está generando una respuesta"
         aria-live="polite"
-        class="flex flex-col"
+        class="flex items-center gap-3 py-1"
         role="status"
       >
         <div
-          class="flex flex-col gap-2 py-1"
-          data-testid="response-skeleton-tutor"
+          class="flex items-center gap-1"
         >
           <span
-            aria-hidden="true"
-            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
-            role="presentation"
-            style="width: 85%; height: 12px;"
+            class="w-2 h-2 rounded-full animate-bounce motion-reduce:animate-none"
+            style="background-color: var(--mode-primary); animation-delay: 0ms;"
           />
           <span
-            aria-hidden="true"
-            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
-            role="presentation"
-            style="width: 60%; height: 12px;"
+            class="w-2 h-2 rounded-full animate-bounce motion-reduce:animate-none"
+            style="background-color: var(--mode-primary); animation-delay: 150ms;"
           />
           <span
-            aria-hidden="true"
-            class="block bg-gray-200 animate-pulse motion-reduce:animate-none rounded-md"
-            role="presentation"
-            style="width: 40%; height: 12px;"
+            class="w-2 h-2 rounded-full animate-bounce motion-reduce:animate-none"
+            style="background-color: var(--mode-primary); animation-delay: 300ms;"
           />
         </div>
+        <span
+          class="text-sm"
+          style="color: var(--mode-text-secondary); font-family: var(--mode-font-body);"
+        >
+          Generando respuesta…
+        </span>
       </div>
     </div>
   </div>
