@@ -1,4 +1,5 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import * as authService from '../services/authService'
 import {
   STORAGE_KEYS as KEYS,
@@ -39,19 +40,32 @@ function resolveUser(result) {
 
 const AuthContext = createContext(null)
 
+function clearStorage() {
+  localStorage.removeItem(KEYS.ACCESS)
+  localStorage.removeItem(KEYS.REFRESH)
+  localStorage.removeItem(KEYS.USER)
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser]           = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
 
-  /* ── Initialization: verify stored token on mount ──
-     authorizedFetch (vía apiRequest en getMe) maneja internamente el caso
-     401 → refresh → retry, así que aquí solo necesitamos un try/catch. */
+  const clearAuthState = useCallback(() => {
+    clearStorage()
+    setUser(null)
+    setError(null)
+    setIsLoading(false)
+  }, [])
+
+  /* ── Initialization: verify stored token on mount ── */
   useEffect(() => {
     let cancelled = false
 
     async function init() {
-      const storedAccess = getAccessToken()
+      const storedAccess  = localStorage.getItem(KEYS.ACCESS)
+      const storedRefresh = localStorage.getItem(KEYS.REFRESH)
+
       if (!storedAccess) {
         if (!cancelled) setIsLoading(false)
         return
@@ -66,9 +80,37 @@ export function AuthProvider({ children }) {
           try { localStorage.setItem(KEYS.USER, JSON.stringify(resolved)) } catch { /* noop */ }
         }
       } catch {
-        if (cancelled) return
-        clearTokens()
-        setUser(null)
+        if (storedRefresh) {
+          try {
+            const refreshResult = await authService.refreshToken(storedRefresh)
+            const newAccess = refreshResult.accessToken
+            localStorage.setItem(KEYS.ACCESS, newAccess)
+
+            try {
+              const me = await authService.getMe(newAccess)
+              const resolved = me?.id ? me : (me?.user ?? userFromToken(newAccess))
+              if (!cancelled) {
+                setUser(resolved)
+                localStorage.setItem(KEYS.USER, JSON.stringify(resolved))
+              }
+            } catch {
+              const fromToken = userFromToken(newAccess)
+              if (!cancelled && fromToken) {
+                setUser(fromToken)
+                localStorage.setItem(KEYS.USER, JSON.stringify(fromToken))
+              } else {
+                clearStorage()
+                if (!cancelled) setUser(null)
+              }
+            }
+          } catch {
+            clearStorage()
+            if (!cancelled) setUser(null)
+          }
+        } else {
+          clearStorage()
+          if (!cancelled) setUser(null)
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -76,18 +118,6 @@ export function AuthProvider({ children }) {
 
     init()
     return () => { cancelled = true }
-  }, [])
-
-  /* ── Auto-logout cuando el refresh falla a mitad de sesión ──
-     `http.js` dispara `archia:auth:expired` cuando refreshAccessToken()
-     no puede renovar (token rotado/expirado/revocado). */
-  useEffect(() => {
-    function handleExpired() {
-      clearTokens()
-      setUser(null)
-    }
-    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpired)
-    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpired)
   }, [])
 
   const login = useCallback(async ({ email, password }) => {
@@ -111,26 +141,19 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
-    try { await authService.logout() } catch { /* noop */ }
-    setUser(null)
-  }, [])
+    const token = localStorage.getItem(KEYS.ACCESS)
+    if (token) {
+      authService.logout(token).catch(() => {})
+    }
+    clearAuthState()
+  }, [clearAuthState])
 
-  /**
-   * Refetch /auth/me y actualiza el user state (incluye `tenant` cargado).
-   * Útil después de login (donde el user inicial viene del JWT decode y no
-   * incluye relaciones) o cuando se necesita info fresca del backend.
-   */
-  const refreshUser = useCallback(async () => {
-    try {
-      const me = await authService.getMe()
-      if (me?.id) {
-        setUser(me)
-        try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
-        return me
-      }
-    } catch { /* el caller decide qué hacer si falla */ }
-    return null
-  }, [])
+  /* ── Session-expired bridge from authFetch ── */
+  useEffect(() => {
+    const onExpired = () => clearAuthState()
+    window.addEventListener('archia:auth-expired', onExpired)
+    return () => window.removeEventListener('archia:auth-expired', onExpired)
+  }, [clearAuthState])
 
   const value = {
     user,
@@ -156,4 +179,8 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return ctx
+}
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }

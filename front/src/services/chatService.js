@@ -9,14 +9,21 @@
  * y retorna los datos ya formateados — sin lógica de estado ni referencias a React.
  */
 
-import { API_BASE, apiRequest, getAccessToken } from './http'
+import { authFetch, authJson } from './authFetch'
 
 const AI_BASE = import.meta.env.VITE_AI_BASE || 'http://localhost:8000'
 
-// Backend IA (FastAPI) usa otro dominio y no comparte refresh con Negocio —
-// se mantiene el helper local para los endpoints de streaming/feedback.
-function getToken() {
-  return getAccessToken()
+const API_BASE = import.meta.env.VITE_API_BASE
+  ? `${import.meta.env.VITE_API_BASE}/api/v1`
+  : '/api/v1'
+
+/* ================================================================
+   Helper para llamadas al Backend API (JSON, con Bearer token y
+   refresh transparente en 401 vía authFetch).
+================================================================ */
+
+async function apiRequest(url, opts = {}) {
+  return authJson(url, opts)
 }
 
 /* ================================================================
@@ -57,10 +64,9 @@ export async function sendMessage({ text, sessionId, images = [], projectId, acc
   if (userId) form.append('user_id', userId)
   images.forEach((img, i) => form.append(`image${i + 1}`, img.file))
 
-  const token = accessToken || getToken()
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
 
-  const resp = await fetch(`${AI_BASE}/message`, { method: 'POST', body: form, headers })
+  const resp = await authFetch(`${AI_BASE}/message`, { method: 'POST', body: form, headers })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`)
   if (!resp.body) throw new Error('Response body is not a readable stream')
 
@@ -134,7 +140,7 @@ export function buildDiagramExportUrl({ sessionId, format = 'svg' }) {
  */
 export async function fetchDiagramSvg({ sessionId }) {
   const url = buildDiagramExportUrl({ sessionId, format: 'svg' })
-  const resp = await fetch(url)
+  const resp = await authFetch(url)
   const rawText = await resp.text()
 
   if (!resp.ok) {
@@ -171,7 +177,7 @@ export async function sendFeedback({ sessionId, messageId, thumbsUp, thumbsDown 
   form.append('thumbs_up',   thumbsUp)
   form.append('thumbs_down', thumbsDown)
 
-  await fetch(`${AI_BASE}/feedback`, { method: 'POST', body: form })
+  await authFetch(`${AI_BASE}/feedback`, { method: 'POST', body: form, skipAuth: true })
 }
 
 /* ================================================================

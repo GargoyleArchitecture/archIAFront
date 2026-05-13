@@ -6,7 +6,13 @@
  * del proyecto (sin pasar el token como argumento).
  */
 
-import { API_BASE as BASE, apiRequest as request } from './http'
+import { authJson } from './authFetch'
+
+const BASE = import.meta.env.VITE_API_BASE
+  ? `${import.meta.env.VITE_API_BASE}/api/v1`
+  : '/api/v1'
+
+const request = (url, opts) => authJson(url, opts)
 
 /* ================================================================
    PROYECTOS — CRUD
