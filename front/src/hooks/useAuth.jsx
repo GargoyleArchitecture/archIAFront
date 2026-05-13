@@ -148,6 +148,17 @@ export function AuthProvider({ children }) {
     clearAuthState()
   }, [clearAuthState])
 
+  /* ── refreshUser: re-fetch /auth/me and update user state ── */
+  const refreshUser = useCallback(async () => {
+    const me = await authService.getMe()
+    const resolved = me?.id ? me : (me?.user ?? userFromToken(getAccessToken() || ''))
+    setUser(resolved)
+    if (resolved) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(resolved)) } catch { /* noop */ }
+    }
+    return resolved
+  }, [])
+
   /* ── Session-expired bridge from authFetch ── */
   useEffect(() => {
     const onExpired = () => clearAuthState()

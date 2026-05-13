@@ -13,7 +13,6 @@ import ProfileView       from './views/ProfileView'
 import AtomShowcase      from './AtomShowcase'
 import MoleculeShowcase  from './MoleculeShowcase'
 import ChatView          from './views/ChatView'
-import ProfileView       from './views/ProfileView'
 import ToastListener     from './components/atoms/ToastListener'
 
 /**
@@ -36,39 +35,21 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginView />} />
+
               <Route
-                path="/"
                 element={
                   <ProtectedRoute>
-                    <MainView />
+                    <AppLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/projects"
-                element={
-                  <ProtectedRoute>
-                    <ProjectsView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/projects/:projectId"
-                element={
-                  <ProtectedRoute>
-                    <ProjectDetailView />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="/"                       element={<ChatHomePanel />} />
+                <Route path="/projects"               element={<ProjectsView />} />
+                <Route path="/projects/:projectId"    element={<ProjectDetailView />} />
+                <Route path="/profile"                element={<ProfileView />} />
+              </Route>
+
               <Route path="/chat" element={<ChatView />} />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfileView />
-                  </ProtectedRoute>
-                }
-              />
               <Route path="/atoms" element={<AtomShowcase />} />
               <Route path="/molecules" element={<MoleculeShowcase />} />
               <Route path="*" element={<Navigate to="/" replace />} />
