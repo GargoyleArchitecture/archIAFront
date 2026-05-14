@@ -155,19 +155,45 @@ export function useChatManager({ projectId = null } = {}) {
       .finally(() => setIsLoading(false))
   }, [projectId])
 
-  /* ── Carga mensajes al cambiar de sesión (solo en modo API) ── */
+  /* Ref con la sessions list mas reciente — evita que el useEffect de carga
+   * de mensajes se re-suscriba a cambios de `sessions` (e.g. renameSession),
+   * lo que disparaba un refetch espurio que pisaba el placeholder optimista
+   * "Generando respuesta…" en el primer mensaje de un chat. */
+  const sessionsRef = useRef(sessions)
+  useEffect(() => { sessionsRef.current = sessions }, [sessions])
+
+  /* ── Carga mensajes al cambiar de sesión (solo en modo API) ──
+   *
+   * Dependencias intencionalmente acotadas a [sessionId, projectId]:
+   * la pertenencia de la sesion se lee del ref `sessionsRef` para no
+   * resuscribirse en cada cambio de la lista. Ademas, el setMessages
+   * usa el callback form y respeta el optimistic update si ya hay un
+   * mensaje pending (defensa contra race con send()).
+   */
   useEffect(() => {
     if (!sessionId || !projectId) return
-    if (!hasSession(sessionId)) {
-      setMessages([])
+    let cancelled = false
+
+    const known = sessionsRef.current.some((s) => s.id === sessionId)
+    if (!known) {
+      setMessages((current) => current.some((m) => m.pending) ? current : [])
       return
     }
+
     setIsLoading(true)
     fetchMessages(sessionId)
-      .then(setMessages)
-      .catch(() => setMessages([]))
-      .finally(() => setIsLoading(false))
-  }, [sessionId, projectId, hasSession])
+      .then((msgs) => {
+        if (cancelled) return
+        setMessages((current) => current.some((m) => m.pending) ? current : msgs)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMessages((current) => current.some((m) => m.pending) ? current : [])
+      })
+      .finally(() => { if (!cancelled) setIsLoading(false) })
+
+    return () => { cancelled = true }
+  }, [sessionId, projectId])
 
   /* ================================================================
      OPERACIONES SOBRE SESIONES
@@ -277,10 +303,11 @@ export function useChatManager({ projectId = null } = {}) {
 
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
 
-      /* Persistir respuesta del asistente en el Backend API */
-      if (projectId && hasSession(sessionId)) {
-        await persistMessage(sessionId, { content: result.text, role: 'AI' })
-      }
+      /* La persistencia de la respuesta IA ahora la hace el Backend IA
+       * directamente contra Negocio (POST /chats/:id/messages) ANTES de
+       * emitir el evento SSE 'complete'. Esto garantiza que el mensaje
+       * quede guardado aunque el cliente navegue o cierre la pestana
+       * mid-stream — el Frontend ya no es responsable de cerrar el ciclo. */
 
       const rendered = optimistic.map((m) =>
         m.id === pendingId
