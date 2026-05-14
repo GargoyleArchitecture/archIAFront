@@ -19,15 +19,16 @@ import { useChatManager } from '../../hooks/useChatManager'
 import { useFeatures } from '../../contexts/FeaturesContext'
 import { listChats, deleteChat } from '../../services/chatService'
 
-import AddIcon               from '@mui/icons-material/Add'
-import MenuIcon              from '@mui/icons-material/Menu'
-import MenuOpenIcon          from '@mui/icons-material/MenuOpen'
-import FolderIcon            from '@mui/icons-material/Folder'
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
-import LogoutIcon            from '@mui/icons-material/Logout'
-import TuneIcon              from '@mui/icons-material/Tune'
-import CloseIcon             from '@mui/icons-material/Close'
-import ChevronRightIcon      from '@mui/icons-material/ChevronRight'
+import AddIcon                  from '@mui/icons-material/Add'
+import MenuIcon                 from '@mui/icons-material/Menu'
+import MenuOpenIcon             from '@mui/icons-material/MenuOpen'
+import FolderIcon               from '@mui/icons-material/Folder'
+import ChatBubbleOutlineIcon    from '@mui/icons-material/ChatBubbleOutline'
+import LogoutIcon               from '@mui/icons-material/Logout'
+import TuneIcon                 from '@mui/icons-material/Tune'
+import CloseIcon                from '@mui/icons-material/Close'
+import ChevronRightIcon         from '@mui/icons-material/ChevronRight'
+import EmojiObjectsOutlinedIcon from '@mui/icons-material/EmojiObjectsOutlined'
 
 import TextAtom      from '../atoms/TextAtom'
 import BoxAtom       from '../atoms/BoxAtom'
@@ -66,7 +67,6 @@ export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [activeProjectId, setActiveProjectId]       = useState(null)
   const [pendingChatId, setPendingChatId]           = useState(null)
-  const [activeRoutine, setActiveRoutine]           = useState(null)
 
   /* ── Recent chats (sidebar) ── */
   const [recentChats, setRecentChats]               = useState([])
@@ -129,7 +129,6 @@ export default function AppLayout() {
     setActiveProjectId(null)
     setSessionId(null)
     setPendingChatId(null)
-    setActiveRoutine(null)
     navigate('/')
   }
 
@@ -192,9 +191,6 @@ export default function AppLayout() {
     activeSession,
     pendingChatId,
     setPendingChatId,
-    // Routines
-    activeRoutine,
-    setActiveRoutine,
   }
 
   return (
@@ -283,6 +279,34 @@ export default function AppLayout() {
             </TooltipAtom>
           )}
         </div>
+
+        {/* F12-T7: Routines — sólo si el feature flag está activo */}
+        {features?.enableRoutines !== false && (
+          <div className={isSidebarCollapsed ? 'pb-2 flex items-center justify-center flex-shrink-0' : 'px-3 pb-2 flex-shrink-0'}>
+            {!isSidebarCollapsed ? (
+              <button
+                type="button"
+                onClick={() => navigate('/routines')}
+                className="w-full px-3 py-2 flex items-center gap-2 rounded-md text-brand-200 hover:bg-brand-800 hover:text-brand-50 transition-colors"
+                data-testid="sidebar-routines-link"
+              >
+                <EmojiObjectsOutlinedIcon style={{ fontSize: 18 }} />
+                <span className="flex-1 text-left text-sm font-medium">Routines</span>
+                <ChevronRightIcon style={{ fontSize: 16 }} className="text-brand-500" />
+              </button>
+            ) : (
+              <TooltipAtom content="Routines" position="right">
+                <button
+                  type="button"
+                  onClick={() => navigate('/routines')}
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 transition-colors"
+                >
+                  <EmojiObjectsOutlinedIcon style={{ fontSize: 20 }} />
+                </button>
+              </TooltipAtom>
+            )}
+          </div>
+        )}
 
         {/* Divider */}
         {!isSidebarCollapsed && (

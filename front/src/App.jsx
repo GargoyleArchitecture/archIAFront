@@ -10,6 +10,8 @@ import ChatHomePanel     from './components/templates/ChatHomePanel'
 import ProjectsView      from './views/ProjectsView'
 import ProjectDetailView from './views/ProjectDetailView'
 import ProfileView       from './views/ProfileView'
+import RoutinesView      from './views/RoutinesView'
+import RoutineDetailView from './views/RoutineDetailView'
 import AtomShowcase      from './AtomShowcase'
 import MoleculeShowcase  from './MoleculeShowcase'
 import ChatView          from './views/ChatView'
@@ -47,6 +49,8 @@ function App() {
                 <Route path="/projects"               element={<ProjectsView />} />
                 <Route path="/projects/:projectId"    element={<ProjectDetailView />} />
                 <Route path="/profile"                element={<ProfileView />} />
+                <Route path="/routines"               element={<RoutinesView />} />
+                <Route path="/routines/:routineId"    element={<RoutineDetailView />} />
               </Route>
 
               <Route path="/chat" element={<ChatView />} />

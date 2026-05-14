@@ -32,8 +32,8 @@
  */
 
 import { createElement } from 'react'
+import { Link } from 'react-router-dom'
 import MarkdownRenderer from '../components/organisms/MarkdownRenderer'
-import ChallengeBlock   from '../components/molecules/ChallengeBlock'
 
 /* ----------------------------------------------------------------
    Renderers reutilizables — usamos createElement en vez de JSX para
@@ -47,12 +47,27 @@ function renderMarkdown({ content }) {
   })
 }
 
+/**
+ * F12-T9: el subgrafo `routine_generator` ya NO se renderiza inline en el
+ * chat. En su lugar, el dispatcher inserta un enlace "Abrir reto generado"
+ * que navega a `/routines/:id` (vista dedicada con el ciclo pedagógico
+ * completo). El payload debe traer `id`; en otro caso retornamos null.
+ */
 function renderRoutine({ payload }) {
-  // El payload llega como objeto serializable del subgrafo routine_generator.
-  // ChallengeBlock retorna null si payload.id está ausente, lo cual es la
-  // semántica correcta del dispatcher (no romper si el backend manda algo
-  // mal formado).
-  return createElement(ChallengeBlock, { routine: payload })
+  if (!payload || typeof payload !== 'object' || !payload.id) return null
+  const title = typeof payload.title === 'string' ? payload.title : 'Nuevo reto'
+  return createElement(
+    'div',
+    {
+      className: 'flex items-center gap-2 p-3 rounded-md border border-brand-200 bg-brand-50',
+      'data-testid': 'routine-generated-link',
+    },
+    createElement('span', { className: 'text-xs text-brand-700 font-semibold uppercase' }, 'Reto creado'),
+    createElement(Link, {
+      to: `/routines/${payload.id}`,
+      className: 'text-sm font-medium text-brand-800 underline hover:no-underline',
+    }, title + ' — Abrir'),
+  )
 }
 
 /* ----------------------------------------------------------------

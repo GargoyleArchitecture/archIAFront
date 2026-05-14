@@ -1,34 +1,39 @@
 /**
  * ChatHomePanel — Panel principal de chat dentro de AppLayout.
  *
- * Renderiza el top bar, el ChallengeBlock activo (si aplica), el contenedor
- * de mensajes y el MessageInput. Lee el estado de chat desde el outlet
- * context provisto por `AppLayout`.
+ * Renderiza el top bar, el contenedor de mensajes y el MessageInput.
+ * Lee el estado de chat desde el outlet context provisto por `AppLayout`.
  *
  * También consume `location.state` para abrir un chat específico cuando el
  * usuario llega desde otro panel (p.ej. ProjectDetailView pasa { chatId,
  * projectId } al navegar a "/").
+ *
+ * F12-T9 (2026-05-14): el overlay `ChallengeBlock` se retiró de este panel.
+ * Tras generar un reto, `WeaknessActionCard` navega a `/routines/:id` (vista
+ * dedicada con el ciclo pedagógico completo). El handover por
+ * `location.state.pendingRoutine` ya no se usa.
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useOutletContext } from 'react-router-dom'
+import { useMode } from '../../contexts/ModeContext'
 
 import SmartToyIcon from '@mui/icons-material/SmartToy'
 import FolderIcon   from '@mui/icons-material/Folder'
 import GridViewIcon from '@mui/icons-material/GridView'
 import SettingsIcon from '@mui/icons-material/Settings'
 
-import TextAtom       from '../atoms/TextAtom'
-import BoxAtom        from '../atoms/BoxAtom'
-import ButtonAtom     from '../atoms/ButtonAtom'
-import LabelAtom      from '../atoms/LabelAtom'
-import TooltipAtom    from '../atoms/TooltipAtom'
+import TextAtom               from '../atoms/TextAtom'
+import BoxAtom                from '../atoms/BoxAtom'
+import ButtonAtom             from '../atoms/ButtonAtom'
+import LabelAtom              from '../atoms/LabelAtom'
+import TooltipAtom            from '../atoms/TooltipAtom'
+import ModeSuggestionChipAtom from '../atoms/ModeSuggestionChipAtom'
 import Chips          from '../molecules/Chips'
 import Modal          from '../molecules/Modal'
 import BubbleMessage  from '../molecules/BubbleMessage'
 import ChatContainer  from '../molecules/ChatContainer'
 import MessageInput   from '../molecules/MessageInput'
-import ChallengeBlock from '../molecules/ChallengeBlock'
 import ModeToggleHint from '../molecules/ModeToggleHint'
 import MarkdownRenderer from '../organisms/MarkdownRenderer'
 
@@ -97,6 +102,7 @@ export default function ChatHomePanel() {
   const navigate = useNavigate()
   const location = useLocation()
   const ctx = useOutletContext()
+  const { mode, setMode } = useMode()
 
   const {
     features,
@@ -109,8 +115,6 @@ export default function ChatHomePanel() {
     send,
     pendingChatId,
     setPendingChatId,
-    activeRoutine,
-    setActiveRoutine,
     getContext,
     saveContext,
   } = ctx
@@ -128,18 +132,10 @@ export default function ChatHomePanel() {
 
   /* ── Consume location.state al montar (handover desde otros paneles) ── */
   useEffect(() => {
-    const { chatId, projectId, pendingRoutine } = location.state || {}
-    let consumed = false
+    const { chatId, projectId } = location.state || {}
     if (chatId && projectId) {
       setPendingChatId(chatId)
       setActiveProjectId(projectId)
-      consumed = true
-    }
-    if (pendingRoutine && pendingRoutine.id) {
-      setActiveRoutine(pendingRoutine)
-      consumed = true
-    }
-    if (consumed) {
       navigate('/', { replace: true, state: {} })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -220,16 +216,6 @@ export default function ChatHomePanel() {
         </div>
       )}
 
-      {/* ── ChallengeBlock activo ── */}
-      {activeRoutine && features.enableRoutines && (
-        <div className="px-4 pt-3 pb-1 bg-gray-50 flex-shrink-0">
-          <ChallengeBlock
-            routine={activeRoutine}
-            onClose={() => setActiveRoutine(null)}
-          />
-        </div>
-      )}
-
       {/* ── Chat Content ── */}
       {activeProjectId ? (
         <ChatContainer className="flex-1">
@@ -239,33 +225,30 @@ export default function ChatHomePanel() {
                 {msg.text}
               </BubbleMessage>
             ) : (
-              <BubbleMessage
-                key={msg.id}
-                variant="ai"
-                isLoading={msg.pending}
-                avatar={AVATAR_AI}
-                noTextWrap
-              >
-                <MarkdownRenderer content={msg.text} />
-              </BubbleMessage>
+              <div key={msg.id} className="flex flex-col items-start gap-2">
+                <BubbleMessage
+                  variant="ai"
+                  isLoading={msg.pending}
+                  avatar={AVATAR_AI}
+                  noTextWrap
+                >
+                  <MarkdownRenderer content={msg.text} />
+                </BubbleMessage>
+                {!msg.pending
+                  && msg.modeSuggestion
+                  && msg.modeSuggestion !== mode
+                  && (
+                    <ModeSuggestionChipAtom
+                      suggestedMode={msg.modeSuggestion}
+                      onClick={() => setMode(msg.modeSuggestion)}
+                    />
+                  )
+                }
+              </div>
             )
           )}
           <div ref={messagesEndRef} />
         </ChatContainer>
-      ) : activeRoutine && features.enableRoutines ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
-          <TextAtom variant="text-sm" className="text-gray-500 text-center max-w-md">
-            El reto se registró arriba. Cuando estés listo, abrí un proyecto para chatear con el agente sobre tu intento.
-          </TextAtom>
-          <ButtonAtom
-            intent="primary"
-            variant="text-icon"
-            icon={<FolderIcon />}
-            onClick={() => navigate('/projects')}
-          >
-            Abrir un proyecto
-          </ButtonAtom>
-        </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <span className="text-brand-200 [&_svg]:w-16 [&_svg]:h-16">
