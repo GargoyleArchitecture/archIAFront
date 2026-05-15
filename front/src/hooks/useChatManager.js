@@ -303,11 +303,10 @@ export function useChatManager({ projectId = null } = {}) {
 
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar
 
-      /* La persistencia de la respuesta IA ahora la hace el Backend IA
-       * directamente contra Negocio (POST /chats/:id/messages) ANTES de
-       * emitir el evento SSE 'complete'. Esto garantiza que el mensaje
-       * quede guardado aunque el cliente navegue o cierre la pestana
-       * mid-stream — el Frontend ya no es responsable de cerrar el ciclo. */
+      /* Persistir respuesta del asistente en el Backend API */
+      if (projectId && hasSession(sessionId)) {
+        await persistMessage(sessionId, { content: result.text, role: 'AI' })
+      }
 
       const rendered = optimistic.map((m) =>
         m.id === pendingId
