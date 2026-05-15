@@ -228,7 +228,10 @@ export default function ChatView({ demo = false, onNavigate }) {
 
   /* ── Auto-scroll al último mensaje ── */
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const id = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+    return () => cancelAnimationFrame(id)
   }, [messages])
 
   /* ── F7-T2 / F7-T3: despacho de sugerencia de modo al terminar turno ──
