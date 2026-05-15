@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useMemo, useState } from 'react'
-import { buildDiagramExportUrl, fetchDiagramSvg } from '../services/chatService'
+import { downloadDiagramBlob, fetchDiagramSvg } from '../services/chatService'
 
 function sanitizeSvg(rawSvg) {
   try {
@@ -88,14 +88,27 @@ export default function DiagramViewer({ sessionId }) {
     }
   }, [sessionId, refreshKey])
 
-  const download = (format, extension) => {
-    const url = buildDiagramExportUrl({ sessionId, format })
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `diagram-${sessionId}-${Date.now()}.${extension}`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+  const download = async (format, extension) => {
+    if (!sessionId) return
+    try {
+      const { blob } = await downloadDiagramBlob({ sessionId, format })
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `diagram-${sessionId}-${Date.now()}.${extension}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      const statusCode = err?.status
+      if (statusCode === 404) {
+        setError('No diagram found for this session. Generate one first in chat.')
+      } else {
+        setError(err?.message || 'Download failed.')
+      }
+      setStatus('error')
+    }
   }
 
   return (
