@@ -19,9 +19,7 @@
  *   }
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE
-  ? `${import.meta.env.VITE_API_BASE}/api/v1`
-  : '/api/v1'
+import { API_BASE, getAccessToken } from './http'
 
 const FLUSH_THRESHOLD = 5
 const FLUSH_DEBOUNCE_MS = 1500
@@ -29,12 +27,10 @@ const FLUSH_DEBOUNCE_MS = 1500
 let queue = []
 let flushTimer = null
 
+// Telemetría es fire-and-forget: usa `fetch` plano (NO `authorizedFetch`)
+// para evitar disparar un refresh-on-401 por un fallo silencioso de logging.
 function getToken() {
-  try {
-    return localStorage.getItem('archia.accessToken') || ''
-  } catch {
-    return ''
-  }
+  return getAccessToken()
 }
 
 function nowIso() {

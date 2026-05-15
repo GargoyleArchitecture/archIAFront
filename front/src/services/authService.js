@@ -1,77 +1,58 @@
-const BASE = import.meta.env.VITE_API_BASE
-  ? `${import.meta.env.VITE_API_BASE}/api/v1`
-  : '/api/v1'
-
-async function request(url, { headers, ...rest } = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...headers },
-    ...rest,
-  })
-  const json = res.headers.get('content-type')?.includes('application/json')
-    ? await res.json()
-    : null
-  if (!res.ok) {
-    throw new Error(json?.message || `HTTP ${res.status}`)
-  }
-  return json?.data ?? json
-}
+import { API_BASE, apiRequest, setTokens, clearTokens, getAccessToken } from './http'
 
 /**
  * POST /auth/register
+ * Persiste ambos tokens en storage tras éxito.
  * @param {{ name: string, email: string, password: string, tenantName: string }} params
  * @returns {Promise<{ accessToken: string, refreshToken: string, user: object }>}
  */
 export async function register({ name, email, password, tenantName }) {
-  return request(`${BASE}/auth/register`, {
+  const result = await apiRequest(`${API_BASE}/auth/register`, {
     method: 'POST',
     body: JSON.stringify({ name, email, password, tenantName }),
   })
+  setTokens({ accessToken: result?.accessToken, refreshToken: result?.refreshToken })
+  return result
 }
 
 /**
  * POST /auth/login
+ * Persiste ambos tokens en storage tras éxito.
  * @param {{ email: string, password: string }} params
  * @returns {Promise<{ accessToken: string, refreshToken: string, user: object }>}
  */
 export async function login({ email, password }) {
-  return request(`${BASE}/auth/login`, {
+  const result = await apiRequest(`${API_BASE}/auth/login`, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
-}
-
-/**
- * POST /auth/refresh
- * @param {string} token - The refresh token
- * @returns {Promise<{ accessToken: string }>}
- */
-export async function refreshToken(token) {
-  return request(`${BASE}/auth/refresh`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  setTokens({ accessToken: result?.accessToken, refreshToken: result?.refreshToken })
+  return result
 }
 
 /**
  * POST /auth/logout
- * @param {string} accessToken
- * @returns {Promise<void>}
+ * Limpia el storage local incluso si el backend responde error
+ * (el access ya pudo haber expirado).
  */
-export async function logout(accessToken) {
-  return request(`${BASE}/auth/logout`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+export async function logout() {
+  const token = getAccessToken()
+  try {
+    if (token) {
+      await apiRequest(`${API_BASE}/auth/logout`, { method: 'POST' })
+    }
+  } catch { /* logout es best-effort */ }
+  finally {
+    clearTokens()
+  }
 }
 
 /**
  * GET /auth/me
- * @param {string} accessToken
+ * El token se inyecta automáticamente desde storage por `apiRequest`.
+ * Si la respuesta es 401, `authorizedFetch` intenta refrescar y reintenta.
  * @returns {Promise<object>} User object
  */
-export async function getMe(accessToken) {
-  return request(`${BASE}/auth/me`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+export async function getMe() {
+  return apiRequest(`${API_BASE}/auth/me`, { method: 'GET' })
 }

@@ -36,6 +36,7 @@ function renderCard(props = {}) {
 beforeEach(() => {
   mockNavigate.mockReset()
   mockGenerateRoutine.mockReset()
+  try { localStorage.clear() } catch { /* noop */ }
 })
 
 describe('WeaknessActionCard', () => {
@@ -59,50 +60,43 @@ describe('WeaknessActionCard', () => {
     expect(btn).toBeDisabled()
   })
 
-  it('en éxito: muestra inline "Reto creado" y navega a / con state.pendingRoutine', async () => {
+  it('F12-T9: en éxito navega a /routines/:id y persiste el id en localStorage', async () => {
     vi.useFakeTimers()
-    mockGenerateRoutine.mockResolvedValueOnce({
-      id: 'r-1',
-      title: 'Resolver race condition',
-      targetWeakness: 'Concurrency',
-      expectedConcepts: ['locks', 'channels'],
-      difficulty: 3,
-    })
-    renderCard()
-    fireEvent.click(screen.getByRole('button', { name: /Generar reto/i }))
-
-    // Loading antes de resolver
-    expect(screen.getByRole('button', { name: /Generando reto/i })).toBeDisabled()
-
-    // Resolver la promise primero (process microtasks)
-    await act(async () => {
-      await Promise.resolve()
-    })
-    expect(screen.getByTestId('weakness-success')).toBeInTheDocument()
-
-    // Avanzar el timer del navigate (act envuelve el setState dentro del setTimeout)
-    await act(async () => {
-      vi.advanceTimersByTime(1300)
-    })
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/',
-      expect.objectContaining({
-        state: expect.objectContaining({
-          pendingRoutine: expect.objectContaining({
-            id: 'r-1',
-            title: 'Resolver race condition',
-            targetWeakness: 'Concurrency',
-            difficulty: 3,
-          }),
-        }),
+    try {
+      mockGenerateRoutine.mockResolvedValueOnce({
+        id: 'r-1',
+        title: 'Resolver race condition',
+        targetWeakness: 'Concurrency',
+        expectedConcepts: ['locks', 'channels'],
+        difficulty: 3,
       })
-    )
-    expect(mockGenerateRoutine).toHaveBeenCalledWith({
-      userId: 'u-1',
-      targetWeakness: 'Concurrency',
-    })
-    vi.useRealTimers()
+      renderCard()
+      fireEvent.click(screen.getByRole('button', { name: /Generar reto/i }))
+
+      // Loading antes de resolver
+      expect(screen.getByRole('button', { name: /Generando reto/i })).toBeDisabled()
+
+      // Resolver la promise primero (process microtasks)
+      await act(async () => {
+        await Promise.resolve()
+      })
+      expect(screen.getByTestId('weakness-success')).toBeInTheDocument()
+
+      // Avanzar el timer del navigate (act envuelve el setState dentro del setTimeout)
+      await act(async () => {
+        vi.advanceTimersByTime(1300)
+      })
+
+      expect(mockNavigate).toHaveBeenCalledWith('/routines/r-1')
+      expect(mockGenerateRoutine).toHaveBeenCalledWith({
+        userId: 'u-1',
+        targetWeakness: 'Concurrency',
+      })
+      // F12-T9: el id queda persistido para deep-link.
+      expect(localStorage.getItem('archia.routines.lastGeneratedId')).toBe('r-1')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('en error: muestra alert inline + botón Reintentar que vuelve a llamar al service', async () => {

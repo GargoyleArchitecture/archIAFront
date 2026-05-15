@@ -57,7 +57,7 @@ function summarize(concepts) {
 
 export default function RadarChart({
   concepts,
-  size = 320,
+  size = 520,
   animate = true,
 }) {
   const titleId = useId()
@@ -92,14 +92,13 @@ export default function RadarChart({
   const { points, polylinePoints } = buildPolygon(values, cx, cy, maxRadius)
 
   return (
-    <div className="w-full" data-testid="radar-chart">
+    <div className="w-full flex justify-center" data-testid="radar-chart">
       <svg
         viewBox={`0 0 ${size} ${size}`}
         width="100%"
-        height="auto"
         role="img"
         aria-labelledby={`${titleId} ${descId}`}
-        style={{ maxWidth: size, display: 'block' }}
+        style={{ width: '100%', maxWidth: size, height: 'auto', display: 'block' }}
       >
         <title id={titleId}>Dominio General — gráfico radar</title>
         <desc id={descId}>

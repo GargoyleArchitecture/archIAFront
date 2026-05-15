@@ -51,7 +51,7 @@ describe('AgentMessageDispatcher', () => {
     expect(container.textContent).toMatch(/Texto fallback/)
   })
 
-  it('renderiza ChallengeBlock para name="routine_generator" con payload válido', () => {
+  it('F12-T9: renderiza link a /routines/:id para name="routine_generator" con payload válido', () => {
     renderDispatcher({
       name: 'routine_generator',
       payload: {
@@ -63,11 +63,17 @@ describe('AgentMessageDispatcher', () => {
         inverseRagSnippet: 'def get(k): return cache.get(k)',
       },
     })
-    expect(screen.getByTestId('challenge-block')).toBeInTheDocument()
-    expect(screen.getByText('Refactorizar caching')).toBeInTheDocument()
+    // El dispatcher ya no inyecta ChallengeBlock; ahora pone un enlace a la
+    // nueva vista detalle (F12-T9). El link conserva el título para el alumno.
+    const linkEl = screen.getByTestId('routine-generated-link')
+    expect(linkEl).toBeInTheDocument()
+    const anchor = linkEl.querySelector('a')
+    expect(anchor).toBeTruthy()
+    expect(anchor.getAttribute('href')).toBe('/routines/r-1')
+    expect(anchor.textContent).toMatch(/Refactorizar caching/)
   })
 
-  it('para routine_generator SIN payload.id, ChallengeBlock retorna null y el dispatcher lo propaga', () => {
+  it('para routine_generator SIN payload.id, el dispatcher retorna null', () => {
     const { container } = renderDispatcher({
       name: 'routine_generator',
       payload: { title: 'sin id' },

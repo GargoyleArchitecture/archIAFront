@@ -8,33 +8,33 @@
  * Estados internos:
  *   idle      → botón "Generar reto" habilitado
  *   loading   → botón deshabilitado + microcopy "Generando reto…"
- *   success   → toast inline "Reto creado · Abriendo chat…" durante 1.2s
- *                antes de navegar a `/` con state.pendingRoutine
+ *   success   → toast inline "Reto creado · Abriendo…" durante 1.2s
+ *                antes de navegar a `/routines/:id` con la rutina.
  *   error     → mensaje inline + botón "Reintentar"
+ *
+ * F12-T9 (2026-05-14): el overlay `ChallengeBlock` quedó deprecado. Tras
+ * generar el reto, navegamos directamente a `/routines/:id` (la nueva vista
+ * detalle) donde el alumno completa el ciclo pedagógico. El reto generado
+ * también se persiste como `routines.lastGeneratedId` en `localStorage`
+ * para deep-linking desde otras superficies (ej. notificaciones).
  *
  * Props:
  *   userId      — string (requerido). Si vacío, el botón queda deshabilitado.
  *   name        — string (requerido). Nombre del concepto a reforzar.
  *   mastery     — number 0..1 (opcional). Determina la severidad.
  *   lastSeenAt  — string ISO (opcional). Microtexto "último visto".
- *
- * Forward-compat con F9-T1:
- *   En éxito navegamos con `navigate('/', { state: { pendingRoutine } })`.
- *   F9-T1 leerá `location.state.pendingRoutine` para inyectar el
- *   ChallengeBlock en el chat. Mientras tanto, el reto SÍ queda
- *   persistido en Backend Negocio.
  */
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import RefreshIcon          from '@mui/icons-material/Refresh'
 import PlayArrowIcon        from '@mui/icons-material/PlayArrow'
-import HourglassEmptyIcon   from '@mui/icons-material/HourglassEmpty'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 
 import ButtonAtom        from '../atoms/ButtonAtom'
 import TextAtom          from '../atoms/TextAtom'
 import SeverityBadgeAtom, { severityFromMastery } from '../atoms/SeverityBadgeAtom'
+import SpinnerAtom       from '../atoms/SpinnerAtom'
 
 import { generateRoutine } from '../../services/profileService'
 import { humanizeDelta }   from '../../utils/profileHydration'
@@ -73,19 +73,21 @@ export default function WeaknessActionCard({
         payload: { routineId: routine?.id, targetWeakness: name, difficulty: routine?.difficulty },
       })
       setStatus('success')
-      // Pequeña pausa antes del navigate para que el usuario vea el feedback
+      // F12-T9: persistimos el id de la rutina recién generada para deep-link
+      // desde otras superficies (notificaciones, atajos, etc.).
+      try {
+        if (routine?.id) {
+          localStorage.setItem('archia.routines.lastGeneratedId', routine.id)
+        }
+      } catch { /* storage unavailable */ }
+      // Pequeña pausa antes del navigate para que el usuario vea el feedback,
+      // luego abre la vista detalle del reto donde completa el ciclo pedagógico.
       setTimeout(() => {
-        navigate('/', {
-          state: {
-            pendingRoutine: {
-              id:               routine?.id,
-              title:            routine?.title,
-              targetWeakness:   routine?.targetWeakness ?? name,
-              expectedConcepts: routine?.expectedConcepts ?? [],
-              difficulty:       routine?.difficulty,
-            },
-          },
-        })
+        if (routine?.id) {
+          navigate(`/routines/${routine.id}`)
+        } else {
+          navigate('/routines')
+        }
       }, NAVIGATE_DELAY_MS)
     } catch (err) {
       const msg = err?.message || 'Error inesperado'
@@ -152,7 +154,7 @@ export default function WeaknessActionCard({
         >
           <CheckCircleOutlineIcon style={{ fontSize: 16 }} aria-hidden="true" />
           <TextAtom variant="text-xs" className="text-success-800">
-            Reto creado · Abriendo chat…
+            Reto creado · Abriendo…
           </TextAtom>
         </div>
       )}
@@ -188,7 +190,11 @@ export default function WeaknessActionCard({
             variant="text-icon"
             intent="primary"
             size="sm"
-            icon={status === 'loading' ? <HourglassEmptyIcon /> : <PlayArrowIcon />}
+            icon={
+              status === 'loading'
+                ? <SpinnerAtom size="sm" intent="on-dark" label="Generando reto" />
+                : <PlayArrowIcon />
+            }
             onClick={handleGenerate}
             disabled={!canGenerate || status === 'loading' || status === 'success'}
           >

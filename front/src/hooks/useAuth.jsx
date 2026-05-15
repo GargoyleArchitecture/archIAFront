@@ -1,12 +1,12 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import * as authService from '../services/authService'
-
-const KEYS = {
-  ACCESS:  'archia.accessToken',
-  REFRESH: 'archia.refreshToken',
-  USER:    'archia.user',
-}
+import {
+  STORAGE_KEYS as KEYS,
+  AUTH_EXPIRED_EVENT,
+  getAccessToken,
+  clearTokens,
+} from '../services/http'
 
 function parseJwtPayload(token) {
   try {
@@ -33,8 +33,8 @@ function userFromToken(token) {
 }
 
 function resolveUser(result) {
-  if (result.user) return result.user
-  if (result.accessToken) return userFromToken(result.accessToken)
+  if (result?.user) return result.user
+  if (result?.accessToken) return userFromToken(result.accessToken)
   return null
 }
 
@@ -67,16 +67,17 @@ export function AuthProvider({ children }) {
       const storedRefresh = localStorage.getItem(KEYS.REFRESH)
 
       if (!storedAccess) {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
         return
       }
 
       try {
-        const me = await authService.getMe(storedAccess)
-        if (!cancelled) {
-          const resolved = me?.id ? me : (me?.user ?? userFromToken(storedAccess))
-          setUser(resolved)
-          localStorage.setItem(KEYS.USER, JSON.stringify(resolved))
+        const me = await authService.getMe()
+        if (cancelled) return
+        const resolved = me?.id ? me : (me?.user ?? userFromToken(getAccessToken() || storedAccess))
+        setUser(resolved)
+        if (resolved) {
+          try { localStorage.setItem(KEYS.USER, JSON.stringify(resolved)) } catch { /* noop */ }
         }
       } catch {
         if (storedRefresh) {
@@ -122,23 +123,21 @@ export function AuthProvider({ children }) {
   const login = useCallback(async ({ email, password }) => {
     setError(null)
     const result = await authService.login({ email, password })
-    localStorage.setItem(KEYS.ACCESS, result.accessToken)
-    localStorage.setItem(KEYS.REFRESH, result.refreshToken)
-
     const me = resolveUser(result)
     setUser(me)
-    localStorage.setItem(KEYS.USER, JSON.stringify(me))
+    if (me) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
+    }
   }, [])
 
   const register = useCallback(async ({ name, email, password, tenantName }) => {
     setError(null)
     const result = await authService.register({ name, email, password, tenantName })
-    localStorage.setItem(KEYS.ACCESS, result.accessToken)
-    localStorage.setItem(KEYS.REFRESH, result.refreshToken)
-
     const me = resolveUser(result)
     setUser(me)
-    localStorage.setItem(KEYS.USER, JSON.stringify(me))
+    if (me) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(me)) } catch { /* noop */ }
+    }
   }, [])
 
   const logout = useCallback(async () => {
@@ -148,6 +147,17 @@ export function AuthProvider({ children }) {
     }
     clearAuthState()
   }, [clearAuthState])
+
+  /* ── refreshUser: re-fetch /auth/me and update user state ── */
+  const refreshUser = useCallback(async () => {
+    const me = await authService.getMe()
+    const resolved = me?.id ? me : (me?.user ?? userFromToken(getAccessToken() || ''))
+    setUser(resolved)
+    if (resolved) {
+      try { localStorage.setItem(KEYS.USER, JSON.stringify(resolved)) } catch { /* noop */ }
+    }
+    return resolved
+  }, [])
 
   /* ── Session-expired bridge from authFetch ── */
   useEffect(() => {
@@ -164,6 +174,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshUser,
   }
 
   return (

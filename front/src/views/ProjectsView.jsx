@@ -5,7 +5,6 @@ import { useProjects } from '../hooks/useProjects'
 import AddIcon       from '@mui/icons-material/Add'
 import FolderIcon    from '@mui/icons-material/Folder'
 import DeleteIcon    from '@mui/icons-material/Delete'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 
 import TextAtom    from '../components/atoms/TextAtom'
@@ -66,22 +65,14 @@ export default function ProjectsView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-y-auto">
 
-      {/* ── Header ── */}
+      {/* ── Header del panel ── */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/')}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              <ArrowBackIcon style={{ fontSize: 20 }} />
-            </button>
-            <HeaderAtom level={3} weight="semibold" className="text-gray-900">
-              My Projects
-            </HeaderAtom>
-          </div>
+          <HeaderAtom level={3} weight="semibold" className="text-gray-900">
+            My Projects
+          </HeaderAtom>
           <ButtonAtom intent="primary" variant="text-icon" icon={<AddIcon />} onClick={openCreate}>
             New Project
           </ButtonAtom>
