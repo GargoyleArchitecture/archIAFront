@@ -318,6 +318,7 @@ export function useChatManager({ projectId = null } = {}) {
               sessionId:        result.sessionId,
               messageId:        result.messageId,
               suggestions:      result.suggestions,
+              diagram:          result.diagram ?? null,  // Issue 3: expose for DiagramViewer
               // F7-T1: sugerencia de cambio de modo del clasificador (F2-T4).
               modeSuggestion:   result.modeSuggestion,
               createdAt:        Date.now(),
