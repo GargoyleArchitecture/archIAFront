@@ -47,10 +47,10 @@ import { hydrateNames } from '../utils/profileHydration'
    Constantes de dominio
 ───────────────────────────────────────────────────────────── */
 const SECTION_TITLES = [
-  { key: 'radar',     title: 'Dominio General',  hint: 'Top 6 conceptos en formato radar (F8-T2).' },
-  { key: 'strengths', title: 'Fortalezas',       hint: 'Conceptos consolidados con alta mastery (F8-T3).' },
-  { key: 'weaknesses', title: 'Debilidades',     hint: 'Áreas a reforzar — generador de retos (F8-T4).' },
-  { key: 'forgetting', title: 'Curva de Olvido', hint: 'Conceptos por re-encontrar antes que decaigan (F8-T5).' },
+  { key: 'radar',     title: 'Dominio General',  hint: 'Top 6 conceptos en formato radar.' },
+  { key: 'strengths', title: 'Fortalezas',       hint: 'Conceptos consolidados con alta mastery.' },
+  { key: 'weaknesses', title: 'Debilidades',     hint: 'Áreas a reforzar — generador de retos.' },
+  { key: 'forgetting', title: 'Curva de Olvido', hint: 'Conceptos por re-encontrar antes que decaigan.' },
 ]
 
 const EXPLANATION_STYLES = [

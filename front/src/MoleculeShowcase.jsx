@@ -1878,7 +1878,7 @@ function CompetencyCardSection() {
     <ShowcaseSection
       id="competency-card"
       title="CompetencyCard"
-      description="Tarjeta de competencia: nombre + severidad derivada de mastery + subconceptos como pills + microtexto de último visto. Reusa SeverityBadgeAtom (F8-T4) y ConceptPillAtom (F10-T2)."
+      description="Tarjeta de competencia: nombre + severidad derivada de mastery + subconceptos como pills + microtexto de último visto. Reusa SeverityBadgeAtom y ConceptPillAtom."
     >
       <VariantGroup label="Variantes por severidad">
         <ShowcaseItem label="mastery 0.20 → Alta">
@@ -1967,7 +1967,7 @@ function ConceptCloudSection() {
     <ShowcaseSection
       id="concept-cloud"
       title="ConceptCloud"
-      description="Nube de conceptos con tamaño tipográfico variable por weight 0..1. Sort por weight DESC. Reusa ConceptPillAtom (F10-T2)."
+      description="Nube de conceptos con tamaño tipográfico variable por weight 0..1. Sort por weight DESC. Reusa ConceptPillAtom."
     >
       <VariantGroup label="Cloud con pesos variados" direction="col">
         <ShowcaseItem label="weights 0.1 → 0.9">
