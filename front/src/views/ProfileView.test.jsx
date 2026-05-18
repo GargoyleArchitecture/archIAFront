@@ -1,143 +1,65 @@
 /**
- * Tests F8-T1: ProfileView
- *
- * Cobertura:
- *  - Estado loading muestra el skeleton.
- *  - Estado ready renderiza las 4 secciones.
- *  - Estado empty muestra el CTA y al hacer click navega a /.
- *  - Estado error muestra panel con botón Reintentar que vuelve a llamar al servicio.
- *  - Sin user.id no se llama al servicio (defensivo).
+ * Tests ProfileView (F18-T3): la vista quedó con SOLO Cuenta + Preferencias.
+ * El dominio técnico (radar/fortalezas/debilidades/olvido) se movió a
+ * `RoutineProgressView` ("Mi progreso", bajo /routines) — ver
+ * RoutineProgressView.test.jsx.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { ModeProvider } from '../contexts/ModeContext'
 
-/* ───────── Mocks ───────── */
-const mockNavigate = vi.fn()
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
-  return { ...actual, useNavigate: () => mockNavigate }
-})
-
-const mockGetUserProfile = vi.fn()
-vi.mock('../services/profileService', () => ({
-  getUserProfile: (...args) => mockGetUserProfile(...args),
-}))
-
 const mockUseAuth = vi.fn()
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => mockUseAuth(),
-}))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => mockUseAuth() }))
 
-/* Import DESPUÉS de los mocks. */
 import ProfileView from './ProfileView'
 
-/* ───────── Helpers ───────── */
 function renderView() {
   return render(
     <MemoryRouter>
       <ModeProvider>
         <ProfileView />
       </ModeProvider>
-    </MemoryRouter>
+    </MemoryRouter>,
   )
 }
 
-const populatedProfile = {
-  userId: 'u-1',
-  strengths: ['SOLID', 'Caching'],
-  weaknesses: ['Concurrency'],
-  evaluatedConcepts: [
-    { name: 'SOLID',       mastery: 0.85, decayRate: 0.05, lastSeenAt: '2026-05-01T10:00:00Z' },
-    { name: 'Concurrency', mastery: 0.30, decayRate: 0.05, lastSeenAt: '2026-04-15T10:00:00Z' },
-  ],
-  updatedAt: '2026-05-08T12:00:00Z',
-}
-
-const emptyProfile = {
-  userId: 'u-1',
-  strengths: [],
-  weaknesses: [],
-  evaluatedConcepts: [],
-  updatedAt: '2026-05-08T12:00:00Z',
-}
-
 beforeEach(() => {
-  mockNavigate.mockReset()
-  mockGetUserProfile.mockReset()
   mockUseAuth.mockReset()
-  mockUseAuth.mockReturnValue({ user: { id: 'u-1', name: 'Tester' } })
+  mockUseAuth.mockReturnValue({
+    user: { id: 'u-1', name: 'Tester', email: 'tester@archia.dev' },
+  })
 })
 
-/* ───────── Tests ───────── */
-describe('ProfileView', () => {
-  it('muestra el skeleton mientras carga', () => {
-    // Promise pendiente → status="loading" persiste durante el render inicial.
-    mockGetUserProfile.mockImplementation(() => new Promise(() => {}))
+describe('ProfileView — Cuenta + Preferencias (F18-T3)', () => {
+  it('renderiza la sección Cuenta con los datos del usuario', () => {
     renderView()
-    expect(screen.getByTestId('profile-skeleton')).toBeInTheDocument()
+    expect(screen.getByTestId('profile-account')).toBeInTheDocument()
+    expect(screen.getByText('Tester')).toBeInTheDocument()
+    expect(screen.getByText('tester@archia.dev')).toBeInTheDocument()
   })
 
-  it('renderiza las 4 secciones cuando el perfil tiene datos', async () => {
-    mockGetUserProfile.mockResolvedValueOnce(populatedProfile)
+  it('renderiza la sección Preferencias de comunicación', () => {
     renderView()
-
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-ready')).toBeInTheDocument()
-    })
-
-    expect(screen.getByText('Dominio General')).toBeInTheDocument()
-    expect(screen.getByText('Fortalezas')).toBeInTheDocument()
-    expect(screen.getByText('Debilidades')).toBeInTheDocument()
-    expect(screen.getByText('Curva de Olvido')).toBeInTheDocument()
+    expect(screen.getByTestId('profile-preferences')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: /Explanation Style/i })).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: /Verbosity/i })).toBeInTheDocument()
   })
 
-  it('muestra el CTA en estado vacío y navega a / al pulsarlo', async () => {
-    mockGetUserProfile.mockResolvedValueOnce(emptyProfile)
+  it('ya NO muestra el dominio técnico (movido a Mi progreso)', () => {
     renderView()
-
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-empty')).toBeInTheDocument()
-    })
-
-    const cta = screen.getByRole('button', {
-      name: /Hablar con el agente para construir tu perfil/i,
-    })
-    fireEvent.click(cta)
-    expect(mockNavigate).toHaveBeenCalledWith('/')
+    expect(screen.queryByTestId('profile-skeleton')).toBeNull()
+    expect(screen.queryByTestId('profile-ready')).toBeNull()
+    expect(screen.queryByTestId('profile-empty')).toBeNull()
+    expect(screen.queryByText('Dominio General')).toBeNull()
+    expect(screen.queryByText('Curva de Olvido')).toBeNull()
   })
 
-  it('muestra panel de error y reintenta al hacer click', async () => {
-    mockGetUserProfile.mockRejectedValueOnce(new Error('HTTP 500'))
-    mockGetUserProfile.mockResolvedValueOnce(populatedProfile)
-
-    renderView()
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-error')).toBeInTheDocument()
-    })
-    expect(screen.getByText(/HTTP 500/)).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /Reintentar/i }))
-
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-ready')).toBeInTheDocument()
-    })
-    expect(mockGetUserProfile).toHaveBeenCalledTimes(2)
-  })
-
-  it('trata 404 como perfil vacío (no como error)', async () => {
-    mockGetUserProfile.mockRejectedValueOnce(new Error('HTTP 404'))
-    renderView()
-    await waitFor(() => {
-      expect(screen.getByTestId('profile-empty')).toBeInTheDocument()
-    })
-  })
-
-  it('no llama al servicio si no hay user.id', () => {
+  it('sin usuario muestra el aviso de Cuenta y no Preferencias', () => {
     mockUseAuth.mockReturnValue({ user: null })
     renderView()
-    expect(mockGetUserProfile).not.toHaveBeenCalled()
+    expect(screen.getByText(/Inicia sesión para ver tus datos/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('profile-preferences')).toBeNull()
   })
 })

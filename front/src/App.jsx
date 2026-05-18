@@ -12,6 +12,7 @@ import ProjectsView      from './views/ProjectsView'
 import ProjectDetailView from './views/ProjectDetailView'
 import ProfileView       from './views/ProfileView'
 import RoutinesView      from './views/RoutinesView'
+import RoutineProgressView from './views/RoutineProgressView'
 import RoutineDetailView from './views/RoutineDetailView'
 import AtomShowcase      from './AtomShowcase'
 import MoleculeShowcase  from './MoleculeShowcase'
@@ -52,6 +53,7 @@ function App() {
                 <Route path="/projects/:projectId"    element={<ProjectDetailView />} />
                 <Route path="/profile"                element={<ProfileView />} />
                 <Route path="/routines"               element={<RoutinesView />} />
+                <Route path="/routines/progreso"      element={<RoutineProgressView />} />
                 <Route path="/routines/:routineId"    element={<RoutineDetailView />} />
               </Route>
 

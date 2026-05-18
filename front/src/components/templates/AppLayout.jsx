@@ -284,16 +284,32 @@ export default function AppLayout() {
         {features?.enableRoutines !== false && (
           <div className={isSidebarCollapsed ? 'pb-2 flex items-center justify-center flex-shrink-0' : 'px-3 pb-2 flex-shrink-0'}>
             {!isSidebarCollapsed ? (
-              <button
-                type="button"
-                onClick={() => navigate('/routines')}
-                className="w-full px-3 py-2 flex items-center gap-2 rounded-md text-brand-200 hover:bg-brand-800 hover:text-brand-50 transition-colors"
-                data-testid="sidebar-routines-link"
-              >
-                <EmojiObjectsOutlinedIcon style={{ fontSize: 18 }} />
-                <span className="flex-1 text-left text-sm font-medium">Routines</span>
-                <ChevronRightIcon style={{ fontSize: 16 }} className="text-brand-500" />
-              </button>
+              <div className="flex flex-col gap-0.5">
+                <div className="px-3 pt-1 pb-0.5 flex items-center gap-2 text-brand-400">
+                  <EmojiObjectsOutlinedIcon style={{ fontSize: 18 }} />
+                  <span className="flex-1 text-left text-xs font-semibold uppercase tracking-wide">
+                    Routines
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/routines')}
+                  className="w-full pl-9 pr-3 py-2 flex items-center gap-2 rounded-md text-brand-200 hover:bg-brand-800 hover:text-brand-50 transition-colors"
+                  data-testid="sidebar-routines-link"
+                >
+                  <span className="flex-1 text-left text-sm font-medium">Mis retos</span>
+                  <ChevronRightIcon style={{ fontSize: 16 }} className="text-brand-500" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/routines/progreso')}
+                  className="w-full pl-9 pr-3 py-2 flex items-center gap-2 rounded-md text-brand-200 hover:bg-brand-800 hover:text-brand-50 transition-colors"
+                  data-testid="sidebar-progress-link"
+                >
+                  <span className="flex-1 text-left text-sm font-medium">Mi progreso</span>
+                  <ChevronRightIcon style={{ fontSize: 16 }} className="text-brand-500" />
+                </button>
+              </div>
             ) : (
               <TooltipAtom content="Routines" position="right">
                 <button
