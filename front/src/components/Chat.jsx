@@ -463,17 +463,24 @@ export default function Chat() {
             );
 
             const lowerText = (msg.text || "").toLowerCase();
-            const isDiagramAnswer =
-              !isUser &&
-              /diagram|diagrama/.test(lowerText);
+            const isDiagramAnswer = !isUser && !!msg.diagram?.ok;
+            const isSpanishDiagram = /diagrama/.test(lowerText);
 
-            const uiSuggestions = isDiagramAnswer
-              ? [
-                  "Generate a component diagram from this system.",
-                  "Generate a deployment diagram for this same system.",
-                  "Define a new ASR based on this system.",
-                ]
-              : filteredSuggestions;
+            const uiSuggestions = filteredSuggestions;
+
+            const diagramActions = isDiagramAnswer
+              ? (isSpanishDiagram
+                  ? [
+                      { label: "Regenerar diagrama", prompt: "Regenera el diagrama con más detalle." },
+                      { label: "Continuar a tácticas", prompt: "Propón tácticas para este estilo." },
+                      { label: "Hacer una pregunta", prompt: "Tengo una pregunta sobre el diagrama: " },
+                    ]
+                  : [
+                      { label: "Regenerate diagram", prompt: "Regenerate the diagram with more detail." },
+                      { label: "Continue to tactics", prompt: "Propose tactics for this style." },
+                      { label: "Ask a question", prompt: "I have a question about the diagram: " },
+                    ])
+              : [];
 
             return (
               <ListItem key={msg.id} disableGutters sx={{ mb: 2 }}>
@@ -523,6 +530,36 @@ export default function Chat() {
                     <Box sx={{ mt: 2, mb: 1 }}>
                       <DiagramViewer sessionId={msg.session_id} />
                     </Box>
+                  )}
+
+                  {!isUser && diagramActions.length > 0 && (
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ flexWrap: "wrap", mt: 1, mb: 0.5, gap: 1 }}
+                    >
+                      {diagramActions.map((action, i) => (
+                        <Button
+                          key={`${msg.id}-diag-action-${i}`}
+                          variant="outlined"
+                          size="small"
+                          onClick={() => onSuggestionClick(action.prompt)}
+                          disabled={isBusy}
+                          sx={{
+                            textTransform: "none",
+                            borderColor: "rgba(3,169,244,0.45)",
+                            color: "#B3E5FC",
+                            background: "rgba(3,169,244,0.10)",
+                            "&:hover": {
+                              borderColor: "rgba(3,169,244,0.7)",
+                              background: "rgba(3,169,244,0.18)",
+                            },
+                          }}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </Stack>
                   )}
 
                   {validImages.length > 0 && (

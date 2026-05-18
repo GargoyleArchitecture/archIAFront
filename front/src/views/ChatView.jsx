@@ -499,7 +499,8 @@ export default function ChatView({ demo = false, onNavigate }) {
             const filteredSuggs  = rawSuggestions.filter(
               (s) => typeof s === 'string' && !/^[a-z0-9_]+$/i.test(s.trim())
             )
-            const isDiagram = /diagram|diagrama/.test((msg.text || '').toLowerCase())
+            // Issue 3: prefer the structured diagram payload; fall back to text heuristic
+            const isDiagram = !!(msg.diagram?.ok) || /diagram|diagrama/.test((msg.text || '').toLowerCase())
             const uiSuggestions = isDiagram
               ? [
                   'Genera un diagrama de componentes de este sistema.',
@@ -553,7 +554,7 @@ export default function ChatView({ demo = false, onNavigate }) {
 
                 {!msg.pending && isDiagram && (
                   <div className="w-full">
-                    <DiagramViewer sessionId={sessionId} />
+                    <DiagramViewer sessionId={msg.sessionId || sessionId} />
                   </div>
                 )}
 

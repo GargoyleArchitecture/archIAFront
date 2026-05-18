@@ -108,12 +108,15 @@ export async function sendMessage({ text, sessionId, images = [], projectId, acc
   if (streamErr) throw streamErr
   if (!final)    throw new Error('Stream ended without a complete event')
 
+  const diagramPayload = final?.diagram && final.diagram.ok ? final.diagram : null
+
   return {
     text:             final?.endMessage                          ?? '—',
     internalMessages: Array.isArray(final?.messages)    ? final.messages    : [],
     sessionId:        final?.session_id                          ?? sessionId,
     messageId:        final?.message_id,
     suggestions:      Array.isArray(final?.suggestions) ? final.suggestions : [],
+    diagram:          diagramPayload,
     // F7-T1: modo confirmado por el backend y sugerencia de cambio (F2-T4).
     mode:             final?.mode            ?? 'professional',
     modeSuggestion:   final?.mode_suggestion ?? null,
@@ -158,6 +161,34 @@ export async function fetchDiagramSvg({ sessionId }) {
   }
 
   return { svgText: rawText }
+}
+
+/**
+ * @param {{ sessionId: string, format: 'svg'|'dot'|'dot_drawio'|'drawio' }} params
+ * @returns {Promise<{ blob: Blob, contentType: string }>}
+ */
+export async function downloadDiagramBlob({ sessionId, format }) {
+  const url = buildDiagramExportUrl({ sessionId, format })
+  const resp = await authFetch(url)
+
+  if (!resp.ok) {
+    const rawText = await resp.text().catch(() => '')
+    let message = rawText || `HTTP ${resp.status}`
+    try {
+      const parsed = JSON.parse(rawText)
+      if (parsed?.detail)  message = String(parsed.detail)
+      if (parsed?.message) message = String(parsed.message)
+    } catch {
+      // ignore json parsing errors
+    }
+    const error = new Error(message)
+    error.status = resp.status
+    throw error
+  }
+
+  const blob = await resp.blob()
+  const contentType = resp.headers.get('Content-Type') || ''
+  return { blob, contentType }
 }
 
 /* ================================================================
