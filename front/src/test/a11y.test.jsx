@@ -32,6 +32,7 @@ vi.mock('../hooks/useAuth', () => ({
 
 /* Importamos las vistas DESPUÉS de los mocks. */
 import ProfileView from '../views/ProfileView'
+import RoutineProgressView from '../views/RoutineProgressView'
 import ChallengeBlock from '../components/molecules/ChallengeBlock'
 
 /**
@@ -64,8 +65,21 @@ beforeEach(() => {
   mockUseAuth.mockReturnValue({ user: { id: 'u-1', name: 'Tester' } })
 })
 
-describe('a11y — ProfileView (F11-T3)', () => {
-  it('ProfileView en estado ready no tiene violaciones nivel A', async () => {
+describe('a11y — ProfileView (Cuenta + Preferencias, F18-T3)', () => {
+  it('ProfileView (slim) no tiene violaciones nivel A', async () => {
+    const { container, findByTestId } = renderInShell(<ProfileView />)
+    await findByTestId('profile-account')
+    const results = await runAxe(container)
+    if (results.violations.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[a11y] ProfileView violations:', JSON.stringify(results.violations, null, 2))
+    }
+    expect(results.violations).toEqual([])
+  })
+})
+
+describe('a11y — RoutineProgressView (Mi progreso, F18-T2)', () => {
+  it('estado ready no tiene violaciones nivel A', async () => {
     mockGetUserProfile.mockResolvedValueOnce({
       userId: 'u-1',
       strengths: ['SOLID', 'Patterns'],
@@ -77,27 +91,27 @@ describe('a11y — ProfileView (F11-T3)', () => {
       ],
       updatedAt: '2026-05-08T12:00:00Z',
     })
-    const { container, findByTestId } = renderInShell(<ProfileView />)
-    await findByTestId('profile-ready')
+    const { container, findByTestId } = renderInShell(<RoutineProgressView />)
+    await findByTestId('progress-ready')
     const results = await runAxe(container)
     if (results.violations.length > 0) {
       // eslint-disable-next-line no-console
-      console.warn('[a11y] ProfileView violations:', JSON.stringify(results.violations, null, 2))
+      console.warn('[a11y] RoutineProgressView violations:', JSON.stringify(results.violations, null, 2))
     }
     expect(results.violations).toEqual([])
   })
 
-  it('ProfileView en estado empty no tiene violaciones nivel A', async () => {
+  it('estado empty no tiene violaciones nivel A', async () => {
     mockGetUserProfile.mockResolvedValueOnce({
       userId: 'u-1', strengths: [], weaknesses: [], evaluatedConcepts: [],
       updatedAt: '2026-05-08T12:00:00Z',
     })
-    const { container, findByTestId } = renderInShell(<ProfileView />)
-    await findByTestId('profile-empty')
+    const { container, findByTestId } = renderInShell(<RoutineProgressView />)
+    await findByTestId('progress-empty')
     const results = await runAxe(container)
     if (results.violations.length > 0) {
       // eslint-disable-next-line no-console
-      console.warn('[a11y] ProfileView empty violations:', results.violations)
+      console.warn('[a11y] RoutineProgressView empty violations:', results.violations)
     }
     expect(results.violations).toEqual([])
   })
@@ -126,17 +140,17 @@ describe('a11y — ChallengeBlock (F11-T3)', () => {
 })
 
 describe('a11y — Color contrast advisory (AA, no failing)', () => {
-  it('reporta hallazgos AA en ProfileView sin fallar (solo warning)', async () => {
+  it('reporta hallazgos AA en RoutineProgressView sin fallar (solo warning)', async () => {
     mockGetUserProfile.mockResolvedValueOnce({
       userId: 'u-1', strengths: [], weaknesses: [], evaluatedConcepts: [],
       updatedAt: '2026-05-08T12:00:00Z',
     })
-    const { container, findByTestId } = renderInShell(<ProfileView />)
-    await findByTestId('profile-empty')
+    const { container, findByTestId } = renderInShell(<RoutineProgressView />)
+    await findByTestId('progress-empty')
     const results = await runAxe(container, { tags: ['wcag2aa', 'wcag21aa'] })
     if (results.violations.length > 0) {
       // eslint-disable-next-line no-console
-      console.warn('[a11y][AA] ProfileView empty — hallazgos AA documentables:',
+      console.warn('[a11y][AA] RoutineProgressView empty — hallazgos AA documentables:',
         results.violations.map((v) => v.id))
     }
     // Asserción suave: NO falla por hallazgos AA. Documentar en docs/a11y_audit.md.

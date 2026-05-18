@@ -247,8 +247,13 @@ export async function getRoutine(routineId) {
  * Crea un nuevo intento para un reto.
  * En MOCK: añade el attempt al state y retorna el attempt creado.
  *
+ * F15-T1: el endpoint real `POST /routines/:id/attempts` liga
+ * `CreateRoutineAttemptDto`, que SOLO admite `status`. El texto del alumno
+ * (`userResponseText`) NO pertenece a este paso — va al endpoint
+ * `POST /routine-attempts/:id/evaluate` (ver `evaluateAttempt`).
+ *
  * @param {string} routineId
- * @param {{ userResponseText?: string }} body
+ * @param {{ status?: 'pending'|'in_progress'|'completed'|'abandoned' }} body
  * @returns {Promise<object>}
  */
 export async function submitAttempt(routineId, body = {}) {
@@ -280,9 +285,14 @@ export async function submitAttempt(routineId, body = {}) {
     _persistMockState(state)
     return attempt
   }
+  // F15-T1: whitelist defensivo — solo `status` (lo único que acepta
+  // CreateRoutineAttemptDto). Un `userResponseText` accidental de cualquier
+  // caller dispararía 400 forbidNonWhitelisted contra el backend real.
+  const safeBody = {}
+  if (body && body.status !== undefined) safeBody.status = body.status
   return apiRequest(`${API_BASE}/routines/${routineId}/attempts`, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(safeBody),
   })
 }
 

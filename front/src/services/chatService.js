@@ -43,6 +43,8 @@ async function apiRequest(url, opts = {}) {
  *   onPartial?:  (evt: object) => void,
  *   mode?:       'tutor' | 'professional',
  *   userId?:     string,
+ *   explanationStyle?: 'ANALOGY' | 'FORMAL' | 'CONCISE',
+ *   verbosity?:        'LOW' | 'MEDIUM' | 'HIGH',
  * }} params
  * @returns {Promise<{
  *   text:             string,
@@ -54,7 +56,7 @@ async function apiRequest(url, opts = {}) {
  *   modeSuggestion:   'tutor' | 'professional' | null,
  * }>}
  */
-export async function sendMessage({ text, sessionId, images = [], projectId, accessToken, onPartial, mode, userId } = {}) {
+export async function sendMessage({ text, sessionId, images = [], projectId, accessToken, onPartial, mode, userId, explanationStyle, verbosity } = {}) {
   const form = new FormData()
   form.append('message',    text)
   form.append('session_id', sessionId)
@@ -62,6 +64,10 @@ export async function sendMessage({ text, sessionId, images = [], projectId, acc
   // F7-T1: propaga el modo activo y el user_id al Backend IA (F2-T2).
   form.append('mode', mode || 'professional')
   if (userId) form.append('user_id', userId)
+  // F13-T1: override por-turno de preferencias (camelCase → snake_case,
+  // mismo patrón que user_id). Omitido si no hay preferencia → fallback Negocio.
+  if (explanationStyle) form.append('explanation_style', explanationStyle)
+  if (verbosity) form.append('verbosity', verbosity)
   images.forEach((img, i) => form.append(`image${i + 1}`, img.file))
 
   const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}

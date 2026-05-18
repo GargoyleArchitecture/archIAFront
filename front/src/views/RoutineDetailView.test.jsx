@@ -2,7 +2,7 @@
  * Tests F12-T8: RoutineDetailView con ciclo completo.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
@@ -132,11 +132,71 @@ describe('RoutineDetailView — reto pendiente', () => {
     await user.click(screen.getByTestId('submit-attempt'))
 
     await waitFor(() => {
-      expect(svc.submitAttempt).toHaveBeenCalledWith('r-001', { userResponseText: 'class LRUCache: pass' })
+      // F15-T1: crear attempt SOLO con status (CreateRoutineAttemptDto);
+      // el texto del alumno va en el paso evaluate.
+      expect(svc.submitAttempt).toHaveBeenCalledWith('r-001', { status: 'in_progress' })
       expect(svc.evaluateAttempt).toHaveBeenCalledWith('a-new', { userResponseText: 'class LRUCache: pass' })
     })
     // Borrador queda limpio en storage.
     expect(localStorage.getItem('archia.routines.draft.r-001')).toBeNull()
+  })
+
+  it('F16-T3: 504 no es fatal; el polling recupera el resultado del sync-back', async () => {
+    // Import + mocks ANTES de useFakeTimers (el dynamic import bajo fake
+    // timers puede colgarse).
+    const svc = await import('../services/routinesService')
+    const evaluatedRoutine = {
+      ...PENDING_ROUTINE,
+      attempts: [
+        {
+          id: 'a-new',
+          routineId: 'r-001',
+          userId: 'user-x',
+          status: 'in_progress',
+          score: '80.00',
+          feedbackJson: {
+            score: 80,
+            criteria: [],
+            strengths: ['ok'],
+            improvements: [],
+            socratic_comment: '?',
+          },
+          userResponseText: 'mi intento',
+          reflectionJson: null,
+          evaluatedAt: '2026-05-18T16:00:00Z',
+          completedAt: null,
+          createdAt: '2026-05-18T15:59:00Z',
+        },
+      ],
+    }
+    // mount → pendiente; polling → ya evaluado (lo persistió el sync-back).
+    svc.getRoutine
+      .mockResolvedValueOnce(PENDING_ROUTINE)
+      .mockResolvedValue(evaluatedRoutine)
+    svc.submitAttempt.mockResolvedValue({ id: 'a-new' })
+    svc.evaluateAttempt.mockRejectedValue(
+      Object.assign(new Error('HTTP 504'), { status: 504 }),
+    )
+
+    vi.useFakeTimers()
+    try {
+      renderDetail({ routineId: 'r-001' })
+      await vi.advanceTimersByTimeAsync(0) // flush reload de montaje
+      fireEvent.change(screen.getByTestId('attempt-draft'), {
+        target: { value: 'mi intento' },
+      })
+      fireEvent.click(screen.getByTestId('submit-attempt'))
+      // submit + toast + evaluate(504) + 1 intervalo de polling (5000ms).
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(0) // flush setRoutine re-render
+
+      expect(screen.getByTestId('feedback-panel')).toBeInTheDocument()
+      // El 504 NO produjo banner de error fatal.
+      expect(screen.queryByText(/No se pudo evaluar/i)).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -170,10 +230,45 @@ describe('RoutineDetailView — reto con attempt evaluado', () => {
     await user.click(screen.getByTestId('reflection-submit'))
 
     await waitFor(() => {
+      // F15-T2: el paso de reflexión reenvía el userResponseText persistido
+      // del attempt (EvaluateRoutineAttemptDto lo exige) + reflection.
       expect(svc.evaluateAttempt).toHaveBeenCalledWith('a-1', {
+        userResponseText: 'def lru(): ...',
         reflection: { difficultPart: 'aaaaaa', wouldDoDifferently: 'bbbbbb' },
       })
     })
+  })
+
+  it('F16-T4: muestra contador total e historial con feedback por intento', async () => {
+    const svc = await import('../services/routinesService')
+    const older = {
+      ...EVALUATED_ROUTINE.attempts[0],
+      id: 'a-1',
+      createdAt: '2026-05-17T10:00:00Z',
+    }
+    const newer = {
+      ...EVALUATED_ROUTINE.attempts[0],
+      id: 'a-2',
+      createdAt: '2026-05-18T10:00:00Z',
+    }
+    svc.getRoutine.mockResolvedValue({
+      ...EVALUATED_ROUTINE,
+      attempts: [older, newer],
+    })
+
+    renderDetail({ routineId: 'r-002' })
+    // Contador total de intentos visible.
+    expect(await screen.findByTestId('attempts-total')).toHaveTextContent(
+      'Intentos realizados: 2',
+    )
+    // Historial: 1 intento previo (el más viejo) como AttemptHistoryItem.
+    fireEvent.click(screen.getByTestId('history-toggle'))
+    expect(screen.getAllByTestId('history-item')).toHaveLength(1)
+    // Expandir el item del historial muestra su feedback completo.
+    fireEvent.click(screen.getByTestId('history-item-toggle'))
+    expect(
+      screen.getAllByTestId('feedback-panel').length,
+    ).toBeGreaterThanOrEqual(1)
   })
 })
 
