@@ -27,7 +27,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useMode } from '../contexts/ModeContext'
 import { useTelemetry } from '../hooks/useTelemetry'
 import { useFeatures } from '../contexts/FeaturesContext'
-import { useUserPreference } from '../hooks/useUserPreference'
+import { usePreferences } from '../contexts/PreferencesContext'
 import { getUserProfile } from '../services/profileService'
 
 import BoxAtom       from '../components/atoms/BoxAtom'
@@ -192,7 +192,9 @@ function EnumField({ label, options, value, onChange, disabled }) {
 }
 
 function PreferencesCard({ userId }) {
-  const { preference, load, save, isLoading } = useUserPreference(userId)
+  // F13-T1: fuente única vía PreferencesContext (compartida con el chat).
+  // Guardar aquí se refleja de inmediato en lo que useChatManager envía.
+  const { preference, reload, save, isLoading } = usePreferences()
   const [style, setStyle]         = useState(null)
   const [verbosity, setVerbosity] = useState(null)
   const [saving, setSaving]       = useState(false)
@@ -200,8 +202,8 @@ function PreferencesCard({ userId }) {
   const [success, setSuccess]     = useState(false)
 
   useEffect(() => {
-    if (userId) load()
-  }, [userId, load])
+    reload()
+  }, [reload])
 
   useEffect(() => {
     setStyle(preference.explanationStyle)

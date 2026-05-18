@@ -30,6 +30,8 @@ import {
 // F7-T1: modo activo e identidad del usuario para propagar al Backend IA.
 import { useMode } from '../contexts/ModeContext'
 import { useAuth } from './useAuth'
+// F13-T1: preferencias de comunicación por-turno hacia /message.
+import { usePreferences } from '../contexts/PreferencesContext'
 
 /* ================================================================
    UTILIDADES PURAS (sin dependencias de React)
@@ -100,6 +102,7 @@ export function useChatManager({ projectId = null } = {}) {
   // F7-T1: modo activo y user_id para propagar al Backend IA en cada turno.
   const { mode }         = useMode()
   const { user }         = useAuth()
+  const { preference }   = usePreferences()
 
   const requestSeq = useRef(0)
   const sessionIds = useMemo(
@@ -299,6 +302,10 @@ export function useChatManager({ projectId = null } = {}) {
         accessToken,
         mode:      mode   || 'professional',
         userId:    user?.id,
+        // F13-T1: override por-turno; si no hay preferencia, se omite y el
+        // Backend IA cae al fetch a Negocio (fallback intacto).
+        explanationStyle: preference?.explanationStyle || undefined,
+        verbosity:        preference?.verbosity || undefined,
       })
 
       if (seq !== requestSeq.current) return   // respuesta de un request anterior: ignorar

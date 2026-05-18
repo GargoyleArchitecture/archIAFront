@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
 import { ModeProvider } from './contexts/ModeContext'
 import { FeaturesProvider } from './contexts/FeaturesContext'
+import { PreferencesProvider } from './contexts/PreferencesContext'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import ProtectedRoute   from './components/auth/ProtectedRoute'
 import LoginView         from './views/LoginView'
@@ -32,6 +33,7 @@ function App() {
     <AuthProvider>
       <FeaturesProvider>
         <ModeProvider>
+         <PreferencesProvider>
           <GlobalShortcutsLayer />
           <ToastListener />
           <BrowserRouter>
@@ -59,6 +61,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
+         </PreferencesProvider>
         </ModeProvider>
       </FeaturesProvider>
     </AuthProvider>
