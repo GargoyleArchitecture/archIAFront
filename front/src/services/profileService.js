@@ -30,8 +30,39 @@ import {
 ================================================================ */
 
 /**
+ * F14-T1: el contrato `EvaluatedConcept.mastery` se expone al cliente en
+ * escala 0-100 (decisión deliberada del contrato OpenAPI). Todo el Frontend
+ * (StrengthChip/WeaknessActionCard/RadarChart/ForgettingCurveList/Competency)
+ * asume 0-1 y hace `mastery*100`, lo que producía 2000%/1500%. Normalizamos
+ * UNA sola vez aquí (único boundary de red por el que pasan TODOS los
+ * consumidores) en vez de tocar cada componente. `decayRate` NO se reescala
+ * (es ~0.05, no porcentaje). El backend y el contrato NO cambian.
+ */
+function _mastery100to01(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return value
+  return Math.max(0, Math.min(1, value / 100))
+}
+
+function _normalizeProfileMastery(profile) {
+  if (!profile || typeof profile !== 'object') return profile
+  const ec = profile.evaluatedConcepts
+  if (!Array.isArray(ec)) return profile
+  return {
+    ...profile,
+    evaluatedConcepts: ec.map((c) =>
+      c && typeof c === 'object'
+        ? { ...c, mastery: _mastery100to01(c.mastery) }
+        : c,
+    ),
+  }
+}
+
+/**
  * Devuelve el perfil técnico del usuario con sus conceptos evaluados.
  * La paginación aplica sobre `evaluatedConcepts` cuando supera pageSize.
+ *
+ * `mastery` se normaliza de la escala de contrato 0-100 a 0-1 (ver F14-T1),
+ * que es la convención interna que esperan todos los consumidores del FE.
  *
  * @param {string} userId
  * @param {{ page?: number, pageSize?: number }} options
@@ -46,7 +77,8 @@ import {
  */
 export async function getUserProfile(userId, { page = 1, pageSize = 50 } = {}) {
   const query = new URLSearchParams({ page, pageSize })
-  return request(`${API_BASE}/users/${userId}/profile?${query.toString()}`)
+  const profile = await request(`${API_BASE}/users/${userId}/profile?${query.toString()}`)
+  return _normalizeProfileMastery(profile)
 }
 
 /* ================================================================

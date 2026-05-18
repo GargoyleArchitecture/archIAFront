@@ -17,7 +17,7 @@
  * `VITE_USE_MOCKS=false`.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import ArrowBackIcon              from '@mui/icons-material/ArrowBack'
@@ -35,6 +35,7 @@ import RubricCard       from '../components/molecules/RubricCard'
 import FeedbackPanel    from '../components/molecules/FeedbackPanel'
 import SolutionPanel    from '../components/molecules/SolutionPanel'
 import ReflectionForm   from '../components/molecules/ReflectionForm'
+import AttemptHistoryItem from '../components/molecules/AttemptHistoryItem'
 
 import {
   getRoutine,
@@ -42,8 +43,15 @@ import {
   evaluateAttempt,
   derivedStatus,
 } from '../services/routinesService'
+import { toast } from '../services/toast'
 
 const DRAFT_KEY_PREFIX = 'archia.routines.draft.'
+
+// F16-T3: el evaluador IA puede tardar; si el HTTP síncrono de Negocio
+// expira (504), el sync-back idempotente de F16-T1 persiste el resultado
+// poco después. Hacemos polling acotado hasta verlo.
+const POLL_INTERVAL_MS = 5000
+const POLL_MAX_TRIES = 24 // ~120s
 
 function clampDifficulty(value) {
   const n = typeof value === 'number' ? value : Number(value)
@@ -83,6 +91,16 @@ export default function RoutineDetailView() {
   const [submitting, setSubmitting] = useState(false)
   const [reflecting, setReflecting] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+
+  // F16-T3: corta el polling si el usuario navega fuera (evita setState en
+  // componente desmontado y un loop colgado de ~120s).
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   const draftKey = useMemo(() => `${DRAFT_KEY_PREFIX}${routineId}`, [routineId])
 
@@ -132,30 +150,106 @@ export default function RoutineDetailView() {
   }
 
   /* ── Acciones ── */
+
+  // F16-T3: polling acotado tras enviar. Resuelve cuando el intento ya tiene
+  // feedback (vía respuesta síncrona O sync-back de IA si el HTTP expiró).
+  const pollForEvaluation = useCallback(
+    async (attemptId) => {
+      for (let i = 0; i < POLL_MAX_TRIES; i++) {
+        await new Promise((res) => setTimeout(res, POLL_INTERVAL_MS))
+        if (!mountedRef.current) return false
+        let r
+        try {
+          r = await getRoutine(routineId)
+        } catch {
+          continue
+        }
+        if (!mountedRef.current) return false
+        const a = (r?.attempts || []).find((x) => x.id === attemptId)
+        if (a && a.feedbackJson) {
+          setRoutine(r)
+          return true
+        }
+      }
+      return false
+    },
+    [routineId],
+  )
+
   const handleSubmitAttempt = async () => {
     if (!routine || !draftText.trim() || submitting) return
     setSubmitting(true)
+    setError(null)
+
+    // F15-T1: crear el attempt sólo con status (CreateRoutineAttemptDto).
+    let attempt
     try {
-      const attempt = await submitAttempt(routine.id, { userResponseText: draftText.trim() })
-      // Evaluamos inmediatamente: en MOCK el evaluator es síncrono y determinista;
-      // cuando Backend reanude, evaluateAttempt llamará al endpoint POST /evaluate.
-      await evaluateAttempt(attempt.id, { userResponseText: draftText.trim() })
-      persistDraft('')
-      setDraftText('')
-      await reload()
+      attempt = await submitAttempt(routine.id, { status: 'in_progress' })
     } catch (err) {
-      setError(err?.message || 'No se pudo enviar el intento.')
-    } finally {
+      setError(err?.message || 'No se pudo crear el intento.')
       setSubmitting(false)
+      return
     }
+
+    const responseText = draftText.trim()
+    persistDraft('')
+    setDraftText('')
+    toast.info('Evaluando tu intento… esto puede tardar un momento.')
+
+    // El texto va a POST /routine-attempts/:id/evaluate.
+    let evaluated = null
+    try {
+      evaluated = await evaluateAttempt(attempt.id, {
+        userResponseText: responseText,
+      })
+    } catch (err) {
+      // F16-T3: 504 (timeout) / 503 NO es fatal — el sync-back idempotente
+      // de F16-T1 persistirá el resultado; lo recogemos por polling. Otros
+      // errores sí se muestran.
+      if (err?.status !== 504 && err?.status !== 503) {
+        setError(err?.message || 'No se pudo evaluar el intento.')
+        setSubmitting(false)
+        return
+      }
+    }
+
+    // Respuesta síncrona ya trajo feedback (caso normal / MOCK): listo.
+    if (evaluated && evaluated.feedbackJson) {
+      await reload()
+      toast.success('¡Evaluación lista!')
+      setSubmitting(false)
+      return
+    }
+
+    // Si no, esperamos el sync-back con polling acotado.
+    const ok = await pollForEvaluation(attempt.id)
+    if (ok) {
+      toast.success('¡Evaluación lista!')
+    } else {
+      toast.warning(
+        'Tu intento se está evaluando. Vuelve a entrar en un momento para ver el feedback.',
+      )
+      await reload()
+    }
+    setSubmitting(false)
   }
 
   const handleSubmitReflection = async ({ difficultPart, wouldDoDifferently }) => {
     const attempt = latestAttempt(routine)
     if (!attempt) return
+    // F15-T2: POST /routine-attempts/:id/evaluate exige `userResponseText`
+    // (EvaluateRoutineAttemptDto, requerido). Reenviamos el texto ya
+    // persistido del attempt junto con la reflexión; sin él el backend
+    // real responde 400 (en MOCK pasaba por idempotencia del evaluator).
+    const priorText = (attempt.userResponseText || '').trim()
+    if (!priorText) {
+      setError('No se puede enviar la reflexión: el intento no tiene una respuesta registrada.')
+      return
+    }
     setReflecting(true)
     try {
       await evaluateAttempt(attempt.id, {
+        userResponseText: priorText,
         reflection: { difficultPart, wouldDoDifferently },
       })
       await reload()
@@ -370,6 +464,17 @@ export default function RoutineDetailView() {
           </section>
         )}
 
+        {/* F16-T4: contador total de intentos (visible con ≥1 intento) */}
+        {allAttemptsSorted.length > 0 && (
+          <TextAtom
+            variant="text-xs"
+            className="text-gray-500"
+            data-testid="attempts-total"
+          >
+            Intentos realizados: {allAttemptsSorted.length}
+          </TextAtom>
+        )}
+
         {/* Feedback */}
         {showFeedback && <FeedbackPanel feedback={attempt.feedbackJson} />}
 
@@ -414,25 +519,11 @@ export default function RoutineDetailView() {
             {showHistory && (
               <ul className="px-5 pb-4 pt-1 flex flex-col gap-3 border-t border-gray-100" role="list">
                 {previousAttempts.map((a) => (
-                  <li
+                  <AttemptHistoryItem
                     key={a.id}
-                    className="p-3 rounded-md bg-gray-50 border border-gray-200"
-                    data-testid="history-item"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <TextAtom variant="text-xs" className="text-gray-500 font-mono">
-                        {new Date(a.createdAt).toLocaleString()}
-                      </TextAtom>
-                      <TextAtom variant="text-xs" weight="semibold" className="text-gray-700">
-                        {a.feedbackJson?.score != null ? `${Math.round(a.feedbackJson.score)}/100` : a.status}
-                      </TextAtom>
-                    </div>
-                    {a.userResponseText && (
-                      <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 max-h-32 overflow-auto">
-                        {a.userResponseText}
-                      </pre>
-                    )}
-                  </li>
+                    attempt={a}
+                    rubric={routine.rubricJson}
+                  />
                 ))}
               </ul>
             )}
