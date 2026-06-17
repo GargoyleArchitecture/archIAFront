@@ -169,8 +169,9 @@ describe('RoutinesView', () => {
     const mod = await import('../services/routinesService')
     mod.listRoutines.mockResolvedValue([])
     renderRoutinesView()
+    // F21-T2: copy localizado a español colombiano neutro (tuteo).
     await waitFor(() => {
-      expect(screen.getByText(/No ten.s retos pendientes/i)).toBeInTheDocument()
+      expect(screen.getByText(/No tienes retos pendientes/i)).toBeInTheDocument()
     })
   })
 })

@@ -11,7 +11,7 @@
  * Cada panel decide qué consumir.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useProjects } from '../../hooks/useProjects'
@@ -90,24 +90,68 @@ export default function AppLayout() {
     loadProjects()
   }, [loadProjects])
 
-  /* ── Recent chats ── */
+  /* ── Recent chats ──
+     F19-T2: envía `userId` desde el JWT como defensa en profundidad. El
+     backend ya acota por `user.sub` (F19-T1); enviar el campo hace explícita
+     la intención y evita regresiones silenciosas si el server cambia.
+
+     F20-T3: el GET /chats puede ganar la carrera contra el PATCH async que
+     emite `useChatManager.renameSession` cuando el usuario manda el primer
+     mensaje. Para que el sidebar nunca muestre un título obsoleto, la
+     respuesta del server se MERGEa con `sessionsRef.current`: si el chat
+     existe en sessions, prefiere el título local (acaba de ser actualizado
+     por renameSession). El refetch sigue ocurriendo para captar chats nuevos
+     no presentes en sessions. */
+  const sessionsRef = useRef(sessions)
+  useEffect(() => { sessionsRef.current = sessions }, [sessions])
+
   const loadRecentChats = useCallback(async () => {
+    if (!authUser?.id) {
+      setRecentChats([])
+      setRecentChatsLoading(false)
+      return
+    }
     setRecentChatsLoading(true)
     try {
-      const list = await listChats({ limit: 50 })
+      const list = await listChats({ userId: authUser.id, limit: 50 })
+      const sessionsByID = new Map(sessionsRef.current.map((s) => [s.id, s]))
+      const merged = list.map((c) => {
+        const s = sessionsByID.get(c.id)
+        return s ? { ...c, title: s.title } : c
+      })
       setRecentChats(
-        [...list].sort(
+        [...merged].sort(
           (a, b) =>
             new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
         )
       )
     } catch { /* noop */ }
     setRecentChatsLoading(false)
-  }, [])
+  }, [authUser?.id])
 
   useEffect(() => { loadRecentChats() }, [loadRecentChats])
+
+  /* F20-T3: sincronización OPTIMISTA local — el sidebar refleja el cambio de
+     título al instante (antes de que el PATCH se complete en el server). El
+     refetch posterior reconcilia con la fuente de verdad usando el merge de
+     `loadRecentChats`. Sin esto, el primer mensaje del usuario dejaba el
+     sidebar mostrando "Nuevo chat" hasta el siguiente reload. */
   useEffect(() => {
-    if (sessions.length > 0) loadRecentChats()
+    if (sessions.length === 0) return
+    setRecentChats((prev) => {
+      if (prev.length === 0) return prev
+      let changed = false
+      const next = prev.map((c) => {
+        const s = sessions.find((x) => x.id === c.id)
+        if (s && s.title !== c.title) {
+          changed = true
+          return { ...c, title: s.title }
+        }
+        return c
+      })
+      return changed ? next : prev
+    })
+    loadRecentChats()
   }, [sessions, loadRecentChats])
 
   /* ── Consume pendingChatId once sessions load ── */
@@ -147,6 +191,12 @@ export default function AppLayout() {
     setConfirmDeleteChat(chat)
   }
 
+  /**
+   * F19-T3: tras borrar un chat (desde "Recent chats"), redirigir a la vista
+   * principal y liberar el proyecto activo. Esto deshabilita el chat fantasma
+   * (el hook ya no auto-crea tras la última eliminación) y deja al usuario en
+   * un estado limpio en `/` sin sesión activa ni proyecto asociado.
+   */
   const executeDeleteRecentChat = async () => {
     const chat = confirmDeleteChat
     if (!chat) return
@@ -157,6 +207,8 @@ export default function AppLayout() {
       try { await deleteChat(chat.id) } catch { /* noop */ }
     }
     setRecentChats((prev) => prev.filter((c) => c.id !== chat.id))
+    setActiveProjectId(null)
+    navigate('/')
   }
 
   /* ─────────── Logout ─────────── */

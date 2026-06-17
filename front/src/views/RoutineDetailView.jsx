@@ -375,7 +375,7 @@ export default function RoutineDetailView() {
             </TextAtom>
             <TextAtom variant="text-xs" className="text-warning-700">
               Este reto fue generado antes de habilitar la persistencia del enunciado
-              completo. Podés explorar el historial de intentos, pero el cuerpo del
+              completo. Puedes explorar el historial de intentos, pero el cuerpo del
               reto no está disponible.
             </TextAtom>
           </div>
@@ -435,12 +435,12 @@ export default function RoutineDetailView() {
             ) : (
               <>
                 <TextAtom variant="text-xs" className="text-gray-500">
-                  Escribí tu solución. El borrador se guarda automáticamente y sobrevive a refresh.
+                  Escribe tu solución. El borrador se guarda automáticamente y sobrevive a refresh.
                 </TextAtom>
                 <textarea
                   value={draftText}
                   onChange={onDraftChange}
-                  placeholder="Escribí tu solución acá. Markdown y código bloque son bienvenidos."
+                  placeholder="Escribe tu solución aquí. Markdown y bloques de código son bienvenidos."
                   rows={10}
                   disabled={submitting}
                   className="w-full px-3 py-2 rounded-md border border-gray-200 bg-white text-sm font-mono theme-transition focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 resize-y disabled:opacity-60"

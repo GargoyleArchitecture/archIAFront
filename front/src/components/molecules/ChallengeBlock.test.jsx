@@ -67,7 +67,7 @@ describe('ChallengeBlock', () => {
     mockSubmitAttempt.mockResolvedValueOnce({ id: 'att-1', status: 'completed' })
     renderBlock()
 
-    const textarea = screen.getByPlaceholderText('Escribí tu intento aquí…')
+    const textarea = screen.getByPlaceholderText('Escribe tu intento aquí…')
     fireEvent.change(textarea, { target: { value: 'Usaría un LRU con TTL.' } })
 
     // Simular Enter para enviar
@@ -86,7 +86,7 @@ describe('ChallengeBlock', () => {
     mockSubmitAttempt.mockResolvedValueOnce({ id: 'att-2', status: 'completed' })
     renderBlock()
 
-    const textarea = screen.getByPlaceholderText('Escribí tu intento aquí…')
+    const textarea = screen.getByPlaceholderText('Escribe tu intento aquí…')
     fireEvent.change(textarea, { target: { value: 'Primer intento' } })
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' })
 

@@ -129,7 +129,7 @@ function EmptyState({ onCTA }) {
         Tu progreso técnico está por comenzar
       </TextAtom>
       <TextAtom variant="text-sm" className="text-gray-500 text-center max-w-md">
-        A medida que practicás retos y conversás con el agente, acá vas a ver
+        A medida que practicas retos y conversas con el agente, aquí vas a ver
         crecer tu dominio: fortalezas, debilidades y qué conviene repasar.
       </TextAtom>
       <ButtonAtom
@@ -201,7 +201,7 @@ export default function RoutineProgressView() {
           El panel de progreso técnico está deshabilitado para tu organización.
         </TextAtom>
         <TextAtom variant="text-sm" className="text-gray-500 text-center max-w-md">
-          Contactá a un administrador si necesitás acceso.
+          Contacta a un administrador si necesitas acceso.
         </TextAtom>
         <ButtonAtom variant="text-icon" intent="primary" onClick={() => navigate('/routines')}>
           Volver a mis retos
@@ -274,14 +274,14 @@ export default function RoutineProgressView() {
                     </div>
                   ) : (
                     <TextAtom variant="text-sm" className="text-gray-500">
-                      Aún no hay fortalezas registradas — ¡seguí practicando!
+                      Aún no hay fortalezas registradas — ¡sigue practicando!
                     </TextAtom>
                   )}
                 </Panel>
 
                 <Panel
                   title="Debilidades"
-                  subtitle="Áreas a reforzar — generá un reto para mejorar."
+                  subtitle="Áreas a reforzar — genera un reto para mejorar."
                 >
                   {weaknesses.length > 0 ? (
                     <div className="flex flex-col gap-3" data-testid="weaknesses-grid">

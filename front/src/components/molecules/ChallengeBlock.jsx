@@ -246,11 +246,11 @@ export default function ChallengeBlock({ routine, onClose }) {
       {status !== STATUS.SCORED && (
         <div className="flex flex-col gap-2" data-testid="challenge-input-wrapper">
           <TextAtom variant="text-xs" className="text-gray-500">
-            Escribí tu intento abajo y enviá cuando estés listo.
+            Escribe tu intento abajo y envía cuando estés listo.
           </TextAtom>
           <MessageInput
             onSend={handleSend}
-            placeholder="Escribí tu intento aquí…"
+            placeholder="Escribe tu intento aquí…"
             hint={
               <span className="inline-flex items-center gap-1.5">
                 <SendIcon style={{ fontSize: 12 }} aria-hidden="true" />

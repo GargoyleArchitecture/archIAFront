@@ -192,13 +192,21 @@ export async function sendFeedback({ sessionId, messageId, thumbsUp, thumbsDown 
 ================================================================ */
 
 /**
- * GET /chats?projectId=&page=&limit=
- * @param {{ projectId?: string, page?: number, limit?: number }} params
+ * GET /chats?projectId=&userId=&page=&limit=
+ *
+ * F19-T2: el cliente envía `userId` como defensa en profundidad. El Backend
+ * Negocio (F19-T1) SIEMPRE acota la consulta a `user.sub` del JWT y devuelve
+ * 403 si el `userId` enviado no coincide con el JWT. Enviar el campo aquí
+ * hace la intención explícita y nos protege ante eventuales regresiones del
+ * server (defensa en profundidad).
+ *
+ * @param {{ projectId?: string, userId?: string, page?: number, limit?: number }} params
  * @returns {Promise<object[]>}
  */
-export async function listChats({ projectId, page = 1, limit = 100 } = {}) {
+export async function listChats({ projectId, userId, page = 1, limit = 100 } = {}) {
   const query = new URLSearchParams({ page, limit })
   if (projectId) query.set('projectId', projectId)
+  if (userId)    query.set('userId', userId)
   const result = await apiRequest(`${API_BASE}/chats?${query.toString()}`)
   return Array.isArray(result) ? result : (result?.data ?? [])
 }

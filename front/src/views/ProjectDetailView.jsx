@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProjects } from '../hooks/useProjects'
+import { useAuth } from '../hooks/useAuth'
 import { listChats, createChat, deleteChat } from '../services/chatService'
 
 import ArrowBackIcon         from '@mui/icons-material/ArrowBack'
@@ -86,6 +87,8 @@ export default function ProjectDetailView() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { projects, load: loadProjects, remove: removeProject, getContext, saveContext } = useProjects()
+  // F19-T2: `user.id` para enviar `userId` explícito a `listChats` (defensa en profundidad).
+  const { user } = useAuth()
 
   const project = projects.find((p) => p.id === projectId)
 
@@ -117,7 +120,9 @@ export default function ProjectDetailView() {
   useEffect(() => {
     if (!projectId) return
     setChatsLoading(true)
-    listChats({ projectId, limit: 100 })
+    // F19-T2: enviar `userId` explícito (defensa en profundidad). El backend
+    // ya acota por JWT (F19-T1).
+    listChats({ projectId, userId: user?.id, limit: 100 })
       .then((list) => {
         const sorted = [...list].sort(
           (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
@@ -126,7 +131,7 @@ export default function ProjectDetailView() {
       })
       .catch(() => {})
       .finally(() => setChatsLoading(false))
-  }, [projectId])
+  }, [projectId, user?.id])
 
   useEffect(() => {
     if (!projectId) return

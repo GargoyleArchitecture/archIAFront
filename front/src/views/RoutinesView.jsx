@@ -174,7 +174,7 @@ export default function RoutinesView() {
         </HeaderAtom>
         <TextAtom variant="text-sm" className="text-gray-500 max-w-md text-center">
           Esta función no está disponible para tu organización en este momento.
-          Si crees que es un error, contactá a tu administrador.
+          Si crees que es un error, contacta a tu administrador.
         </TextAtom>
         <ButtonAtom
           variant="text-icon"
@@ -202,7 +202,7 @@ export default function RoutinesView() {
               Mis retos pedagógicos
             </HeaderAtom>
             <TextAtom variant="text-xs" className="text-gray-500">
-              Practica un reto, recibe feedback estructurado y reflexioná sobre tu solución.
+              Practica un reto, recibe feedback estructurado y reflexiona sobre tu solución.
             </TextAtom>
           </div>
         </div>
@@ -257,13 +257,13 @@ export default function RoutinesView() {
             <FilterListIcon style={{ fontSize: 36 }} className="text-gray-400" aria-hidden="true" />
             <TextAtom variant="text-sm" className="text-gray-500">
               {activeTab === 'pending'
-                ? 'No tenés retos pendientes en este momento.'
+                ? 'No tienes retos pendientes en este momento.'
                 : 'Aún no has completado ningún reto.'}
             </TextAtom>
             <TextAtom variant="text-xs" className="text-gray-400 max-w-md text-center">
               {activeTab === 'pending'
-                ? 'Generá un reto desde tu perfil o explorá los retos completados para repasar.'
-                : 'Cuando termines un reto y envíes tu reflexión, aparecerá acá.'}
+                ? 'Genera un reto desde tu perfil o explora los retos completados para repasar.'
+                : 'Cuando termines un reto y envíes tu reflexión, aparecerá aquí.'}
             </TextAtom>
           </div>
         )}

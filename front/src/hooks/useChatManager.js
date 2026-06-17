@@ -131,9 +131,11 @@ export function useChatManager({ projectId = null } = {}) {
       return
     }
 
-    /* Modo API: cargar chats del proyecto */
+    /* Modo API: cargar chats del proyecto.
+       F19-T2: enviar `userId` explícito (defensa en profundidad). El backend
+       ya acota por JWT (F19-T1); este send hace la intención explícita. */
     setIsLoading(true)
-    listChats({ projectId })
+    listChats({ projectId, userId: user?.id })
       .then((list) => {
         if (list.length === 0) {
           return createChat({ projectId, title: 'Nuevo chat' }).then((c) => [c])
@@ -237,6 +239,17 @@ export function useChatManager({ projectId = null } = {}) {
     }
   }
 
+  /**
+   * Borra una sesión y, si era la activa, deja el hook en estado "sin sesión".
+   *
+   * F19-T3: ANTES, al quedar sin chats, el hook llamaba a `createSession()`
+   * automáticamente. En modo API (`projectId` no nulo) eso POSTeaba un nuevo
+   * chat al server, lo que el usuario reportó como "se me crea otro
+   * automáticamente con el último proyecto asociado". La creación implícita
+   * deja de ser responsabilidad del hook: ahora simplemente vacía el estado
+   * (`sessionId = null`, `messages = []`) y la vista/caller decide a dónde
+   * navegar (típicamente a la vista principal `/`).
+   */
   const deleteSession = (id) => {
     if (isBusy) return
 
@@ -252,8 +265,9 @@ export function useChatManager({ projectId = null } = {}) {
       if (remaining.length > 0) {
         setSessionId(remaining[0].id)
       } else {
-        /* Crear nueva sesión al quedarse sin chats */
-        createSession()
+        // F19-T3: sin chats restantes → estado vacío explícito; sin auto-create.
+        setSessionId(null)
+        setMessages([])
       }
     }
   }

@@ -197,7 +197,7 @@ function PreferencesCard({ userId }) {
   return (
     <SectionCard
       title="Preferencias de comunicación"
-      hint="Cómo querés que la IA explique y formatee sus respuestas."
+      hint="Cómo quieres que la IA explique y formatee sus respuestas."
     >
       <div className="flex flex-col gap-5" data-testid="profile-preferences">
         <EnumField
@@ -280,7 +280,7 @@ export default function ProfileView() {
             Mi Perfil
           </TextAtom>
           <TextAtom variant="text-xs" className="text-gray-500">
-            Tu cuenta y cómo querés que la IA te explique. Tu progreso técnico
+            Tu cuenta y cómo quieres que la IA te explique. Tu progreso técnico
             vive ahora en Routines › Mi progreso.
           </TextAtom>
         </div>

@@ -22,8 +22,19 @@ import { useUserPreference } from '../hooks/useUserPreference'
  */
 const PreferencesContext = createContext(null)
 
+/**
+ * F20-T4: defaults globales alineados con el backend
+ * (`UsersService.getPreferences` también devuelve ANALOGY/MEDIUM si no hay
+ * fila). El primer turno de chat envía estos valores aun antes de que el GET
+ * a Negocio responda — el contrato del agente nunca recibe `undefined`.
+ */
+export const PREFERENCE_DEFAULTS = {
+  explanationStyle: 'ANALOGY',
+  verbosity: 'MEDIUM',
+}
+
 const _SAFE_FALLBACK = {
-  preference: { explanationStyle: null, verbosity: null },
+  preference: { ...PREFERENCE_DEFAULTS },
   isLoading: false,
   error: null,
   reload: () => {},

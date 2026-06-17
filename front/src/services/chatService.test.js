@@ -2,16 +2,20 @@
 /**
  * F13-T1: chatService.sendMessage adjunta explanation_style/verbosity al
  * FormData (camelCase → snake_case) cuando se proveen, y los omite si no.
+ *
+ * F19-T2: chatService.listChats adjunta `userId` al query string cuando se
+ * provee, como defensa en profundidad (el backend ya acota por JWT en F19-T1).
  */
 import { describe, it, beforeEach, expect, vi } from 'vitest'
 
 const mockAuthFetch = vi.fn()
+const mockAuthJson  = vi.fn()
 vi.mock('./authFetch', () => ({
   authFetch: (...args) => mockAuthFetch(...args),
-  authJson: vi.fn(),
+  authJson:  (...args) => mockAuthJson(...args),
 }))
 
-import { sendMessage } from './chatService'
+import { sendMessage, listChats } from './chatService'
 
 function streamingResponseWithComplete() {
   const evt = 'data: {"type":"complete","endMessage":"ok","session_id":"s1"}\n\n'
@@ -37,6 +41,40 @@ function lastFormData() {
 beforeEach(() => {
   mockAuthFetch.mockReset()
   mockAuthFetch.mockResolvedValue(streamingResponseWithComplete())
+})
+
+/* ─────────────── F19-T2: listChats envía userId ─────────────── */
+
+describe('chatService.listChats — userId en query (F19-T2)', () => {
+  beforeEach(() => {
+    mockAuthJson.mockReset()
+    mockAuthJson.mockResolvedValue({ data: [] })
+  })
+
+  const lastUrl = () => mockAuthJson.mock.calls[mockAuthJson.mock.calls.length - 1][0]
+
+  it('adjunta userId al query string cuando se provee', async () => {
+    await listChats({ userId: 'u-123', limit: 50 })
+    const url = lastUrl()
+    const qs = new URL(url, 'http://x').searchParams
+    expect(qs.get('userId')).toBe('u-123')
+    expect(qs.get('limit')).toBe('50')
+  })
+
+  it('omite userId del query si no se provee (fallback al scoping por JWT)', async () => {
+    await listChats({ limit: 50 })
+    const url = lastUrl()
+    const qs = new URL(url, 'http://x').searchParams
+    expect(qs.has('userId')).toBe(false)
+  })
+
+  it('compone projectId y userId cuando ambos vienen', async () => {
+    await listChats({ projectId: 'p-1', userId: 'u-1', limit: 100 })
+    const url = lastUrl()
+    const qs = new URL(url, 'http://x').searchParams
+    expect(qs.get('projectId')).toBe('p-1')
+    expect(qs.get('userId')).toBe('u-1')
+  })
 })
 
 describe('chatService.sendMessage — preferencias por-turno (F13-T1)', () => {

@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMode } from '../contexts/ModeContext'
 
 /* MUI Icons — solo iconos SVG, cero componentes de MUI */
@@ -181,6 +182,8 @@ function FeedbackButtons({ sessionId, messageId, rated, onRate }) {
 export default function ChatView({ demo = false, onNavigate }) {
   /* ── Modo activo — F7-T2 / F7-T3 ── */
   const { mode, setMode } = useMode()
+  // F19-T3: redirigir a la vista principal tras borrar un chat.
+  const navigate = useNavigate()
 
   /* ── Lógica del chat (hook) ── */
   const {
@@ -385,7 +388,11 @@ export default function ChatView({ demo = false, onNavigate }) {
                     variant="icon" intent="danger" size="xs"
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (confirm('¿Eliminar esta conversación?')) deleteSession(s.id)
+                      if (confirm('¿Eliminar esta conversación?')) {
+                        deleteSession(s.id)
+                        // F19-T3: tras borrar, ir a la vista principal.
+                        navigate('/')
+                      }
                     }}
                     disabled={isBusy}
                     aria-label="Eliminar conversación"

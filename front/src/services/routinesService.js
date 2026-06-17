@@ -84,16 +84,33 @@ export function __resetMockStateForTests() {
 ============================================================ */
 
 /**
- * Deriva el status lógico del reto a partir del attempt más reciente.
- * Convención alineada con la decisión arquitectónica de F4-T6 (Negocio):
- * el status no se duplica en la columna `routines.status`; se calcula
- * del `routine_attempts` más nuevo.
+ * Deriva el status lógico del reto.
+ *
+ * F21-T1: el backend Negocio computa el status correcto en el servidor
+ * (`RoutinesService.deriveStatus`) y lo retorna como campo top-level
+ * `routine.status` en el listado de `findAllByUser`, PERO sin incluir el
+ * array `attempts` (eficiencia: el detalle sí lo incluye). Antes esta función
+ * ignoraba `routine.status` y siempre re-derivaba desde `attempts`; sin
+ * attempts caía a `'pending'`, lo que hacía que la pestaña "Completados" no
+ * mostrara nada porque TODOS los retos del listado se veían pending.
+ *
+ * Ahora la prioridad es:
+ *   1. `routine.status` si viene del server (caso listado).
+ *   2. Cálculo basado en `routine.attempts` (caso detalle, mocks legacy).
+ *   3. `'pending'` como fallback.
  *
  * @param {object} routine
  * @returns {'pending' | 'in_progress' | 'completed' | 'abandoned'}
  */
+const _VALID_STATUSES = new Set(['pending', 'in_progress', 'completed', 'abandoned'])
+
 export function derivedStatus(routine) {
-  if (!routine || !Array.isArray(routine.attempts) || routine.attempts.length === 0) {
+  if (!routine) return 'pending'
+  // F21-T1: preferir el status server-side cuando viene en el response.
+  if (typeof routine.status === 'string' && _VALID_STATUSES.has(routine.status)) {
+    return routine.status
+  }
+  if (!Array.isArray(routine.attempts) || routine.attempts.length === 0) {
     return 'pending'
   }
   const sorted = [...routine.attempts].sort(
@@ -105,15 +122,30 @@ export function derivedStatus(routine) {
 /**
  * Microcopy compacto para tarjetas del listado.
  *
+ * F21-T1: el response del listado del backend trae `attemptsCount` (F16-T5)
+ * pero NO el array `attempts`. Antes esta función decía "Sin intentos" para
+ * todos los retos del listado, lo que era engañoso. Ahora:
+ *   - Si hay attempts hidratados (caso detalle, mock): usa el evaluado más
+ *     reciente para mostrar score.
+ *   - Si no hay attempts pero `attemptsCount > 0` (caso listado): muestra el
+ *     conteo y deja claro que el feedback vive en el detalle.
+ *   - Si tampoco hay attemptsCount: "Sin intentos" (correcto).
+ *
  * @param {object} routine
  * @returns {string}
  */
 export function summarizeFeedback(routine) {
-  if (!routine || !Array.isArray(routine.attempts) || routine.attempts.length === 0) {
+  if (!routine) return 'Sin intentos'
+  const attempts = Array.isArray(routine.attempts) ? routine.attempts : []
+  if (attempts.length === 0) {
+    const count = Number(routine.attemptsCount || 0)
+    if (count > 0) {
+      return count === 1 ? '1 intento · feedback en el detalle' : `${count} intentos · feedback en el detalle`
+    }
     return 'Sin intentos'
   }
   // Tomamos el attempt evaluado más reciente.
-  const evaluated = [...routine.attempts]
+  const evaluated = [...attempts]
     .filter((a) => a && a.evaluatedAt && a.feedbackJson)
     .sort((a, b) => new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime())
   if (evaluated.length === 0) {

@@ -72,7 +72,7 @@ export default function RadarChart({
     return (
       <div className="flex flex-col gap-2 py-4" data-testid="radar-placeholder">
         <TextAtom variant="text-sm" className="text-gray-500">
-          Necesitás al menos 3 conceptos evaluados para mostrar el radar.
+          Necesitas al menos 3 conceptos evaluados para mostrar el radar.
         </TextAtom>
         <TextAtom variant="text-xs" className="text-gray-400">
           {topConcepts.length === 0

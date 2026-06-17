@@ -70,11 +70,14 @@ describe('PreferencesContext', () => {
     expect(mockSave).toHaveBeenCalledWith({ explanationStyle: 'CONCISE', verbosity: 'LOW' })
   })
 
-  it('usePreferences fuera del provider degrada seguro (no lanza)', () => {
+  it('usePreferences fuera del provider degrada seguro al default global ANALOGY / MEDIUM (F20-T4)', () => {
     // Mismo criterio que FeaturesContext: vistas standalone en tests no
     // deben romperse. En producción el provider siempre está montado.
+    // F20-T4: el fallback ya NO es null/null — devuelve los defaults globales
+    // alineados con el server, de modo que cualquier código que lea la
+    // preferencia obtenga valores accionables sin importar el contexto.
     render(<Reader />)
-    expect(screen.getByTestId('style')).toHaveTextContent('null')
-    expect(screen.getByTestId('verbosity')).toHaveTextContent('null')
+    expect(screen.getByTestId('style')).toHaveTextContent('ANALOGY')
+    expect(screen.getByTestId('verbosity')).toHaveTextContent('MEDIUM')
   })
 })
